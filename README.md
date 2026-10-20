@@ -1,6 +1,6 @@
 # Embervale
 
-An HD-2D action RPG that runs in your browser: pixel-art heroes in a lit 3D world, seven classes, bosses, pets, loot and a speedrun mode.
+An HD-2D action RPG that runs in your browser: pixel-art heroes in a detailed, lit 3D diorama world with real shadows, filmic lighting and tilt-shift depth of field. Seven classes, bosses, pets, loot and a speedrun mode.
 
 **Play:** https://toltecs101.github.io/embervale/
 
