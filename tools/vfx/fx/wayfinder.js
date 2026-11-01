@@ -7,23 +7,28 @@
      the way a deep flat decal does. Sprites write no depth, so a chevron that a nearer prop or character covers on screen (the notice board,
      a lamp post) dithers out over 0.15 s instead of showing through it.
    - Placement: from 1.6 tiles ahead of the hero, one chevron every 1.75 tiles (~1.5 hero widths) along the route (Chaikin-smoothed),
-     up to 9 (6 in lite mode); each points along the route as the camera sees it, snapped to 8 ways (direction averaged over +-0.7 tiles).
-   - Shape: a compact ">" 9 px tall and 7 px long, arms 3 px thick (4 px by the tip) with a V-notched tail; diagonals are a 7 x 7 corner,
-     arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it. Top-lit: open space above
-     -> one step lighter, open space below -> one step darker, the spine one step lighter.
-   - Pulse: every 1.8 s a pulse runs out from the hero, 0.13 s per chevron (+-0.03 s jitter). Heat h rises over 0.08 s, peaks, then decays
-     as e^(-dt/0.3); the body step is 3.4 - 3.4h through the ramp, Bayer-dithered between neighbouring steps so it dithers back down to gold.
-     Rest brightness varies +-0.05 per chevron. Chevrons past the 4th Bayer-dither out toward the 9th.
-   - The hottest chevron (h > .78) carries a 1 px cross glint on its tip (white core, cream arm, pale cyan arm ends); as the pulse passes,
-     3 motes of 1 px rise 15 px over 0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
-   - Light: a faint ground glow pool (12 x 4.5 px ellipse, 0.12 + 0.2 h, #c08840) under every chevron and a bloom halo (10 x 9 px,
-     0.8 h^1.5, #f0c060) round the hot one.
+     up to 7 (6 in lite mode); each points along the route as the camera sees it, snapped to 8 ways (direction averaged over +-0.7 tiles).
+   - Shape: one design, a compact ">" 9 px tall and 7 px long, arms 3 px thick (4 px by the tip) with a V-notched tail; diagonals are a
+     7 x 7 corner, arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it. Top-lit:
+     open space above -> one step lighter, open space below -> one step darker, the spine one step lighter.
+   - Distance (from the 3rd chevron on): the rim always stays; up to 40 % of body pixels dither to holes, the shape loses 1 px of arm past
+     the 5th, and far rims go one step darker (#2e1c0c) while their top edge goes one step brighter, so they hold on grass and cobbles.
+   - Pulse: every 1.8 s a pulse runs out from the hero, 0.16 s per chevron (+-0.03 s jitter): heat rises in 0.05 s, holds 0.22 s (the
+     body is the warm-white / cream core for 2-3 frames at 0.1 s steps), then falls back to gold over 0.3 s; the body step is
+     3.2 - 3.2h through the ramp, Bayer-dithered between neighbouring steps. Rest brightness varies +-0.05 per chevron. The pulsing one
+     lifts 1 px; at rest each bobs 1 px on its own phase (sin(3.1 t + 1.9 k) > .55).
+   - Ground glow: under each, a 17 x 6 px stepped pool round its foot drawn in the colour layer (a denser dithered core in pale yellow /
+     muted gold, a sparse dithered rim in muted / old gold, both brighter while pulsing), then the light buffer: a 12 x 4.5 px warm
+     pool (0.12 + 0.2 h, #c08840) and a 10 x 9 px bloom halo (0.8 h^1.5, #f0c060) round the pulsing one.
+   - Glints on the pulsing chevron: a white plus on its tip (2 px arms for 0.12 s, then 1 px) with a 5 px glow, a second small plus
+     twinkling beside it (a new spot every 0.1 s, 0.2 s), and one pale cyan sparkle pixel behind it; 3 motes of 1 px rise 15 px over
+     0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
    - Palette: R0 #fffbea warm white, R1 #fff0c2 cream, R2 #f5dc90 pale yellow, R3 #d9b05c muted gold, R4 #a97c34 old gold,
-     R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (glint arm ends only).
+     R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (the sparkle pixel only).
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
 const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   const R=['#fffbea','#fff0c2','#f5dc90','#d9b05c','#a97c34','#64401a','#2e1c0c'].map(hex),CYAN=hex('#c8f0ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
-  const ELO=[0,-1,-2,-3,-3],EHI=[3,2,0,-1,-2],NMAX=9,STEP=1.75,FIRST=1.6,LOOP=1.8,STAG=.13,SQ=.36,CW=24,LH=32,CX=12,CY=21;
+  const ELO=[0,-1,-2,-3,-3],EHI=[3,2,0,-1,-2],NMAX=7,STEP=1.75,FIRST=1.6,LOOP=1.8,STAG=.16,SQ=.36,CW=24,LH=32,CX=12,CY=21;
   /* ---------- A* on the tile grid (8 neighbours, no corner cutting); props cost extra so the route keeps to open ground ---------- */
   const NN=MW*MH,GC=new Float32Array(NN),FR=new Int32Array(NN),ST=new Uint32Array(NN),CL=new Uint32Array(NN),HP=new Int32Array(NN),HF=new Float32Array(NN);
   let stamp=0,hn=0;
@@ -55,7 +60,7 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   const st={pts:[],t:0,on:false,goal:null,rt:null,re:0,last:'',h:new Float32Array(NMAX),dd:new Float32Array(NMAX),oc:new Float32Array(NMAX),occ:new Uint8Array(NMAX),m:new Uint8Array(CW*LH)};
   function heat(dt){st.t+=dt;const tp=st.t%LOOP;
     for(let k=0;k<NMAX;k++){let d=tp-k*STAG-(hash(k,3)-.5)*.06;d=((d+.3)%LOOP+LOOP)%LOOP-.3;st.dd[k]=d;
-      st.h[k]=d<-.08?0:d<0?1+d/.08:Math.exp(-d/.3);}}
+      st.h[k]=d<-.05?0:d<0?1+d/.05:d<.22?1:Math.max(0,1-(d-.22)/.3);}}
   /* sprites (props, the notice board, characters) do not write depth, so a ground decal behind one would show through it: find the
      chevrons a nearer sprite covers on screen and dither them out (st.oc eases to 1 over .15 s) */
   function occlude(dt){const n=st.pts.length,O=st.occ;O.fill(0);if(!n)return;const S=[],AD=ATL.data,AW=ATL.w;
@@ -78,32 +83,41 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
       for(let x=Math.max(0,Math.floor(cx-rx));x<Math.min(CW,cx+rx);x++){const ex=(x+.5-cx)/rx,d=ex*ex+ey*ey;if(d>=1)continue;const f=1-Math.sqrt(d);L.add(x,y,c,f*f*k);}}};
     return{update(dt){fade=stop?Math.max(0,fade-dt/.3):Math.min(1,fade+dt/.4);},
       draw(fr){const c=st.pts[k];if(!c||fade<=0)return;const buf=new Px(fr,fr.color),light=new Px(fr,fr.light),M=st.m;
-        const h=Math.min(1,st.h[k]+base),dd=st.dd[k],far=k<4?1:Math.max(0,1-(k-3.5)/(NMAX-3.2)),a=fade*far*(1-st.oc[k]);if(a<=.02)return;
-        /* the route's direction as the camera sees it: ground depth shrinks to SQ on screen */
+        /* fk: 0 near .. 1 farthest. Distance never drops the outline: it dithers holes into the body (up to 40 %), shrinks the shape
+           by 1 px past fk .55, darkens the rim one step and brightens the top edge one more step so far ones hold on grass and cobbles */
+        const h=Math.min(1,st.h[k]+base),dd=st.dd[k],fk=k<3?0:Math.min(1,(k-2.5)/(NMAX-3)),a=fade*(1-st.oc[k]);if(a<=.02)return;
+        const sm=fk>.55?1:0,hot=dd>=0&&dd<.3,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
         let ux=Math.cos(c.a),uy=Math.sin(c.a)*SQ;const ul=Math.hypot(ux,uy)||1;ux/=ul;uy/=ul;
+        /* the stepped ground glow under it, drawn first: a 17 x 6 px pool round its foot, a denser dithered core and a sparse dithered rim (the light pool blooms over them) */
+        for(let Y=CY;Y<=CY+7;Y++)for(let x=CX-9;x<=CX+9;x++){const ex=(x+.5-CX-.5)/8.5,ey=(Y+.5-CY-3.5)/3,e=ex*ex+ey*ey;if(e>=1)continue;
+          if(e<.4)put(buf,x,Y,h>.6?R[2]:R[3],(.35+.3*h)*a);else put(buf,x,Y,h>.6?R[3]:R[4],(.12+.2*h)*a);}
         /* the chevron mask on the art grid, the direction snapped to 8 ways so its arms are clean 1:1 stairs or straight runs:
            E is a ">" 9 px tall, 7 px long, arms 3 px thick, 4 px next to the tip, V-notched tail (rows ELO..EHI); SE is its 45-degree
-           turn, a 7 x 7 corner, arms 2 px thick, the inside of the corner filled to a V notch; the other six are quarter turns of these. 1 = body, 2 = spine */
-        const d=((Math.round(Math.atan2(uy,ux)/(Math.PI/4))%8)+8)%8,rq=d>>1,dg=d&1;
-        M.fill(0);for(let Y=CY-6;Y<=CY+6;Y++)for(let x=CX-6;x<=CX+6;x++){let i=x-CX,j=Y-CY;for(let r=0;r<rq;r++){const t=i;i=j;j=-t;}
-          let on=0;if(!dg){const aj=Math.abs(j);if(aj<=4&&i>=ELO[aj]&&i<=EHI[aj])on=j===0&&i>=0?2:1;}else if(i<=3&&j<=3&&i>=-3&&j>=-3&&(i>=2||j>=2||(i>=0&&j>=0&&i+j>=1)))on=i===j&&i>=1?2:1;
+           turn, a 7 x 7 corner, arms 2 px thick, the inside of the corner filled to a V notch; the other six are quarter turns of these.
+           Far ones lose 1 px of arm (|j| <= 3, corner arms from -2). 1 = body, 2 = spine */
+        const d=((Math.round(Math.atan2(uy,ux)/(Math.PI/4))%8)+8)%8,rq=d>>1,dg=d&1,lim=dg?-3+sm:4-sm;
+        M.fill(0);for(let Y=cy-6;Y<=cy+6;Y++)for(let x=CX-6;x<=CX+6;x++){let i=x-CX,j=Y-cy;for(let r=0;r<rq;r++){const t=i;i=j;j=-t;}
+          let on=0;if(!dg){const aj=Math.abs(j);if(aj<=lim&&i>=ELO[aj]&&i<=EHI[aj])on=j===0&&i>=0?2:1;}else if(i<=3&&j<=3&&i>=lim&&j>=lim&&(i>=2||j>=2||(i>=0&&j>=0&&i+j>=1)))on=i===j&&i>=1?2:1;
           M[Y*CW+x]=on;}
         let tx=3,ty=dg?3:0;for(let r=0;r<rq;r++){const t=tx;tx=-ty;ty=t;}
-        const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0,lv=3.4-3.4*h;
-        for(let Y=CY-7;Y<=CY+8;Y++)for(let x=CX-7;x<=CX+7;x++){
-          if(m(x,Y)){let i=Math.floor(lv+bayer(x,Y));
-            if(M[Y*CW+x]===2||!m(x,Y-1))i--;else if(!m(x,Y+1))i++;put(buf,x,Y,R[Math.max(0,Math.min(4,i))],a);}
-          else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[5],a);
+        const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0,lv=3.2-3.2*h,hole=.4*fk;
+        for(let Y=cy-7;Y<=cy+8;Y++)for(let x=CX-7;x<=CX+7;x++){
+          if(m(x,Y)){const edge=!m(x,Y-1);if(!edge&&M[Y*CW+x]!==2&&bayer(x+3,Y+1)<hole)continue;let i=Math.floor(lv+bayer(x,Y));
+            if(edge)i-=fk>.5?2:1;else if(M[Y*CW+x]===2)i--;else if(!m(x,Y+1))i++;put(buf,x,Y,R[Math.max(0,Math.min(4,i))],a);}
+          else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[fk>.5?6:5],a);
           else if(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[6],a*.6);}
-        /* light: a faint pool on the ground (an 11 x 4 px ellipse) under every chevron and a round bloom halo round the hot one */
-        eglow(light,CX+.5,CY+1,12,4.5,POOL,(.12+.2*h)*a);if(h>.12&&!PERF.lite)eglow(light,CX+.5,CY+.5,10,9,HALO,.8*Math.pow(h,1.5)*a);
-        /* the cross glint on the tip of the hottest chevron */
-        if(h>.78){const gx=CX+tx,gy=CY+ty,L=h>.93?3:2;put(buf,gx,gy,R[0],1);
-          for(let s=1;s<=L;s++){const col=s===1?R[1]:s===L?CYAN:R[1];put(buf,gx+s,gy,col,1);put(buf,gx-s,gy,col,1);put(buf,gx,gy-s,col,1);put(buf,gx,gy+s,col,1);}
-          light.glow(gx+.5,gy+.5,5,R[1],.35*h*a);}
+        /* light: a warm pool on the ground (12 x 4.5 px) under every chevron, a round bloom halo round the pulsing one */
+        eglow(light,CX+.5,CY+1,12,4.5,POOL,(.12+.2*h)*a);if(h>.12&&!PERF.lite)eglow(light,CX+.5,cy+.5,10,9,HALO,.8*Math.pow(h,1.5)*a);
+        /* the pulsing chevron: a white plus glint on the tip, a second small plus twinkling beside it, one pale cyan sparkle pixel */
+        if(hot){const gx=CX+tx,gy=cy+ty,L=dd<.12?2:1;put(buf,gx,gy,R[0],1);
+          for(let s2=1;s2<=L;s2++){const col=s2===L&&L>1?R[2]:R[1];put(buf,gx+s2,gy,col,1);put(buf,gx-s2,gy,col,1);put(buf,gx,gy-s2,col,1);put(buf,gx,gy+s2,col,1);}
+          light.glow(gx+.5,gy+.5,5,R[1],.4*a);
+          const ph=Math.floor(dd/.1),sx=CX+Math.round((hash(k*7+ph,5)-.5)*12),sy=cy-4-Math.round(hash(k*3+ph,9)*3);
+          if(ph<2){put(buf,sx,sy,R[0],a);put(buf,sx-1,sy,R[1],a);put(buf,sx+1,sy,R[1],a);put(buf,sx,sy-1,R[1],a);put(buf,sx,sy+1,R[1],a);}
+          put(buf,CX-tx+(dg?0:-1),cy-5+(ph&1),CYAN,a);}
         /* motes lifting off as the pulse passes */
         if(dd>=0&&dd<.9&&!PERF.lite)for(let j=0;j<3;j++){const ag=dd-j*.1;if(ag<0)continue;const q=ag/.8;if(q>=1)continue;
-          const mx=Math.round(CX-.5+(hash(k*5+j,11)-.5)*8+Math.sin(ag*9+j*2)*.8),my=Math.round(CY-2-q*15-j);
+          const mx=Math.round(CX-.5+(hash(k*5+j,11)-.5)*8+Math.sin(ag*9+j*2)*.8),my=Math.round(cy-2-q*15-j);
           put(buf,mx,my,q<.3?R[0]:q<.6?R[1]:R[2],(1-q*q)*a);}},
       done:()=>stop&&fade<=0,stop(){stop=true;}};}
   /* ---------- the trail ---------- */

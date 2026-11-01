@@ -40,20 +40,22 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
       ps.spawn(PT.SPARK,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-(glance?20:60),(glance?R.range(.25,.42):R.range(.1,.3))*SL);}
     if(onSurface){const sc=o.surface,dc=mix(sc,rgb(150,140,150),.35);
       for(let i=0;i<(glance?2:Math.round(3+5*S));i++){const a=(glance?B:N)+R.range(-.8,.8)*(glance?.6:1),sp=R.range(150,420)*S;
-        ps.spawn(PT.CHIP,X,Y+ny*2,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.8,1.4),R.chance(.5)?scale(sc,1.25):R.chance(.5)?sc:scale(sc,.7),R.chance(.3)?2:1);}
-      for(let i=0;i<(glance?0:Math.round(1+2*S));i++){const a=N+R.range(-1,1),sp=R.range(20,90)*S;ps.spawn(PT.DUST,X+nx*3,Y+ny*3,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.35,.7),dc,R.range(1.4,2.8)*Math.sqrt(S));}
-      if(!glance)ps.spawn(PT.SMOKE,X+nx*4,Y+ny*4,R.range(-8,8),R.range(-30,-14),R.range(.8,1.3),SMK,R.range(1.6,2.4)*Math.sqrt(S)*(o.smokeR??1),.05);}
+        ps.spawn(PT.CHIP,X,Y+ny*2,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.8,1.4),o.chips?o.chips[i%o.chips.length]:R.chance(.5)?scale(sc,1.25):R.chance(.5)?sc:scale(sc,.7),R.chance(.3)?2:1,o.chips?R.range(.08,.12):0);}
+      for(let i=0;i<(glance||o.chips?0:Math.round(1+2*S));i++){const a=N+R.range(-1,1),sp=R.range(20,90)*S;ps.spawn(PT.DUST,X+nx*3,Y+ny*3,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.35,.7),dc,R.range(1.4,2.8)*Math.sqrt(S));}
+      if(!glance)ps.spawn(PT.SMOKE,X+nx*4,Y+ny*4,R.range(-8,8),R.range(-30,-14),R.range(.8,1.3),SMK,R.range(1.6,2.4)*Math.sqrt(S)*(o.smokeR??1),o.chips?.1:.05);}
     if(o.kick!==undefined){const g=o.kick,dc=mix(o.surface??SMOKE,rgb(150,140,150),.35);
       for(let i=0;i<3;i++){const sd=(i-1)||R.sign(),sp=R.range(40,110)*S;ps.spawn(PT.DUST,X+sd*R.range(2,6),g-R.range(1,3),sd*sp+Math.cos(B)*30,-R.range(6,22),R.range(.45,.6),dc,R.range(1.6,2.6)*Math.sqrt(S),R.range(.06,.1));}
-      if(!glance)ps.spawn(PT.SMOKE,X+Math.cos(B)*8,g-4,Math.cos(B)*14,R.range(-22,-12),R.range(.5,.6),SMK,R.range(2,2.8)*Math.sqrt(S),.08);
-      for(let i=0,m=glance?3:6;i<m;i++)ps.spawn(PT.CHIP,X+R.range(-6,12)*PX*Math.sign(Math.cos(B)||1),g-1,R.range(-50,50)+Math.cos(B)*40,-R.range(60,170),R.range(.55,.75),GREYBLUE[i%3],R.chance(.35)?2:1,R.range(.06,.12));}
-    for(let i=0,m=glance?0:6;i<m;i++){const a=B+R.range(-.8,.3),sp=R.range(140,380)*S;ps.spawn(PT.EMBER,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-R.range(60,180),R.range(.48,.58));}
-    for(let i=0;i<(o.shards??0);i++){const a=N+R.range(-.9,.9)+Math.cos(B)*.5,sp=R.range(160,380)*S;ps.spawn(PT.SHARD,X,Y,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.6,.8),0,R.chance(.5)?3:2,R.range(0,.03));}
+      if(!glance)for(let i=0;i<2;i++)ps.spawn(PT.SMOKE,X+Math.cos(B)*(4+8*i),g-3,Math.cos(B)*(8+8*i),R.range(-14,-6),R.range(.65,.8),o.puff??SMK,R.range(2.2,3)*Math.sqrt(S),.06+.04*i);
+      for(let i=0,m=glance?3:6;i<m;i++)ps.spawn(PT.CHIP,X+R.range(-6,12)*PX*Math.sign(Math.cos(B)||1),g-1,R.range(-50,50)+Math.cos(B)*40,-R.range(60,170),R.range(.75,.95),GREYBLUE[i%3],R.chance(.35)?2:1,R.range(.06,.12));}
+    for(let i=0,m=glance?0:6;i<m;i++){const sd=i<4?Math.sign(Math.cos(B)||1):-Math.sign(Math.cos(B)||1);ps.spawn(PT.EMBER,X+sd*4*PX,Y,sd*R.range(200,420)*S,-R.range(300,460)*Math.sqrt(S),R.range(.55,.7),0,1,R.range(.1,.15));}
+    for(let i=0;i<(o.shards??0);i++){const a=N+R.range(-.9,.9)+Math.cos(B)*.5,sp=R.range(160,380)*S;ps.spawn(PT.SHARD,X,Y,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.75,.95),0,R.chance(.5)?3:2,R.range(0,.03));}
     o.shake?.(.03*S);
     const tx=Math.cos(B),ty=Math.sin(B),STREAK=.16,SPEED=o.streakSpeed??1500,scorch=o.scorch??true,scT=scorch===true?1.1:scorch===false?0:+scorch||0,scK=scorch===true?.9:scT;
     const sx=Math.cos(N+Math.PI/2)*Math.sign(Math.cos(A-(N+Math.PI/2))||1),sy=Math.sin(N+Math.PI/2)*Math.sign(Math.cos(A-(N+Math.PI/2))||1);
     return{
-      update(dt){t+=dt;ps.update(dt);},
+      update(dt){const t0=t;t+=dt;if(glance&&t0<STREAK&&t>=STREAK){const hd=(SPEED*STREAK)/PX+6*S,hx=X+tx*hd*PX,hy=Y+ty*hd*PX;
+          for(let i=0;i<5;i++){const a=B+R.range(-.9,.5),sp=R.range(160,380);ps.spawn(PT.EMBER,hx,hy,Math.cos(a)*sp,Math.sin(a)*sp-R.range(40,140),R.range(.45,.6));}}
+        ps.update(dt);},
       draw(fr,layer){const buf=new Px(fr,fr.color),light=new Px(fr,fr.light);
         if(layer!=='front'){
           if(glance&&onSurface&&t<scT){const T=clamp(1-t/scK),L=9*S;
@@ -62,28 +64,30 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
         if(layer==='back')return;
         const f=Math.max(1,Math.ceil(t*60-1e-6));
         if(f<=2){const sc=f===1?1:1.25,L=spikes.reduce((m,p)=>Math.max(m,p.len),0)*sc*K;
-          star(buf,ax,ay,spikes,S,sc,f===1?1:.55,C[0],C[2],C[1],C[3],C[4],K);
-          for(let d=0;d<=L;d+=.5){const u=d/L;buf.set(Math.floor(ax+tx*d),Math.floor(ay+ty*d),u<.55?C[0]:u<.8?C[1]:C[2]);}
-          buf.disc(ax,ay,f===1?1.5:1.2,C[0]);if(glance){buf.disc(ax,ay,f===1?3:2.4,C[1]);buf.disc(ax,ay,f===1?2:1.5,C[0]);}}
+          star(buf,ax,ay,spikes,S,sc,f===1?.85:.5,C[0],C[1],C[1],C[3],C[4],K);
+          for(let d=0;d<=L;d+=.5){const u=d/L;buf.set(Math.floor(ax+tx*d),Math.floor(ay+ty*d),u<.45?C[0]:u<.8?C[1]:C[3]);}
+          for(const p of spikes)if(open(p.a)){const c=Math.cos(p.a),sn=Math.sin(p.a),L0=p.len*sc*K;for(let d=L0+1;d<=L0+3+2*(f-1);d+=1)if(d<L0+2||(d|0)%2===0)buf.set(Math.floor(ax+c*d),Math.floor(ay+sn*d),d<L0+2?C[3]:C[1]);}
+          buf.disc(ax,ay,f===1?1.1:.9,C[0]);if(glance){buf.disc(ax,ay,f===1?3:2.4,C[1]);buf.disc(ax,ay,f===1?2:1.5,C[0]);}}
         if(f>=3&&t<.13){const k=(t-2/60)/(.13-2/60);for(const s of shards)crescent(buf,ax,ay,s.a,s.r+s.v*(t-2/60),s.arc*(1-.4*k),k<.4?C[2]:k<.7?C[3]:C[4],1-k);}
-        if(!glance&&f>=3&&t<.2){const k=(t-2/60)/(.2-2/60),r=(8+12*(1-Math.pow(1-k,3)))*S,th=Math.max(1.5,2.5*(1-k)*S+1),hi=k<.45?C[1]:C[2],out=C[4],col=k<.45?C[2]:k<.75?C[3]:C[4],edge=k<.45?C[3]:C[4];
-          for(let j=0,n=Math.ceil(r*TAU*1.3);j<n;j++){const a=(j/n)*TAU;if(!open(a))continue;const tj=th+((j*7+3)%11<4?1:0);for(let q=-tj/2;q<=tj/2;q+=.5)dot(buf,ax+Math.cos(a)*(r+q),ay+Math.sin(a)*(r+q),q>tj/2-.6?out:q<-tj/2+.6&&k<.75?hi:col,1.15-k);}}
+        if(!glance&&f>=3&&t<.2){const k=(t-2/60)/(.2-2/60),r=(6+8*(1-Math.pow(1-k,3)))*S*(o.ringK??1),lead=k<.45?C[1]:k<.8?C[3]:C[4],inn=k<.45?C[1]:C[2],a=k<.55?1:(1-k)/.45;
+          for(let j=0,n=Math.ceil(r*TAU*1.6);j<n;j++){const an=(j/n)*TAU;if(!open(an))continue;const c=Math.cos(an),sn=Math.sin(an),front=Math.cos(an-B)>.1;
+            dot(buf,ax+c*r,ay+sn*r,lead,a);if(k<.45||(front&&k<.8))dot(buf,ax+c*(r-1),ay+sn*(r-1),inn,a);}}
         if(glance&&t<STREAK){const head=(SPEED*t)/PX+6*S,tail=Math.max(2,head-(40+220*t)/PX),k=t/STREAK;
           const fade=k<.55?1:1-(k-.55)/.45;
-          for(let d=tail;d<=head;d+=.5){const u=(d-tail)/Math.max(1,head-tail),x=ax+tx*d,y=ay+ty*d;
-            dot(buf,x+ty,y-tx,u>.6?C[3]:C[4],(u>.4?fade:(1-k)*fade)*.9);dot(buf,x-ty*.6,y+tx*.6,u>.75?C[3]:C[4],(u>.4?fade:(1-k)*fade)*.8);
-            dot(buf,x,y,u>.7?C[0]:u>.3?C[1]:C[2],u>.4?fade:(1-k)*fade);}
-          light.glow(ax+tx*head,ay+ty*head,9,C[2],.6*(1-k));}
+          for(let d=tail;d<=head;d+=.5){const u=(d-tail)/Math.max(1,head-tail),x=ax+tx*d,y=ay+ty*d,seg=((head-d)/2.5|0)%2,a=u>.4?fade:(1-k)*fade;
+            if(seg&&u<.85)continue;dot(buf,x,y,u>.7?C[0]:u>.3?C[1]:C[3],a);dot(buf,x+ty,y-tx,u>.7?C[1]:C[3],a*.95);if(u>.6)dot(buf,x-ty,y+tx,C[4],a*.9);}
+          light.glow(ax+tx*head,ay+ty*head,6,C[3],.35*(1-k));}
+        if(glance&&t>=STREAK&&t<STREAK+2.5/60){const hd=(SPEED*STREAK)/PX+6*S,hx=ax+tx*hd,hy=ay+ty*hd;for(let d=-3;d<=3;d++){buf.set(Math.floor(hx+d),Math.floor(hy),Math.abs(d)<2?C[0]:C[3]);buf.set(Math.floor(hx),Math.floor(hy+d),Math.abs(d)<2?C[0]:C[3]);}light.glow(hx,hy,5,C[3],.4);}
         ps.draw(buf,light,'front');
-        const pop=Math.exp(-t/.05);if(pop>.02){light.glow(ax,ay,18*S+6,C[3],.75*pop);light.glow(ax,ay,7*S+2,C[1],.6*pop);}},
+        const pop=Math.exp(-t/.045);if(pop>.02){light.glow(ax,ay,14*S+5,C[3],.6*pop);light.glow(ax,ay,5*S+2,C[0],.4*pop);}},
       done:()=>t>(glance?Math.max(.2,scT):.2)&&ps.list.length===0,
       lamp:()=>{const pop=Math.exp(-t/.05);return pop>.05?{i:1.1*pop*S,c:[(C[3]&255)/255,((C[3]>>>8)&255)/255,((C[3]>>>16)&255)/255],r:120*S,h:0}:null;}};}
   /* Embervale: K scales the star (spikes x K, width x K^0.6) and an outline pass in the ramp's dark step keeps it readable on pale bodies */
   function star(buf,ax,ay,spikes,S,sc,th,core,body,inner,rim,out=rim,K=1){const wk=Math.pow(K,.6);
     for(const pass of [-1,0,1,2])for(const s of spikes){const c=Math.cos(s.a),sn=Math.sin(s.a),L=s.len*sc*K;
-      for(let d=0;d<=L+(pass<0?1:0);d+=.5){const hw0=s.w*wk*th*Math.max(0,1-d/L)*Math.min(1,.5+d/3),hw=pass<0?hw0+1.5:pass===0?hw0+.8:pass===1?hw0:hw0*.45;if(pass===2&&d>L*.55)break;
+      for(let d=0;d<=L+(pass<0?1:0);d+=.5){const hw0=s.w*wk*th*Math.max(0,1-d/L)*Math.min(1,.5+d/3),hw=pass<0?hw0+1.1:pass===0?hw0+.5:pass===1?hw0:hw0*.35;if(pass===2&&d>L*.4)break;
         for(let q=-hw;q<=hw;q+=.5)buf.set(Math.floor(ax+c*d-sn*q),Math.floor(ay+sn*d+c*q),pass<0?out:pass===0?rim:pass===1?(d<L*.35?inner:body):core);}}
-    const r=2.4*S*sc*Math.sqrt(th)*wk;buf.disc(ax,ay,r+1.2,out);buf.disc(ax,ay,r+.8,rim);buf.disc(ax,ay,r+.3,inner);buf.disc(ax,ay,r-.4,core);}
+    const r=2*S*sc*Math.sqrt(th)*wk;buf.disc(ax,ay,r+1.1,out);buf.disc(ax,ay,r+.6,rim);buf.disc(ax,ay,r,inner);buf.disc(ax,ay,Math.min(1.2,r-.6),core);}
   function crescent(buf,ax,ay,a,r,arc,c,k){const n=Math.ceil(r*arc*2.2);
     for(let j=0;j<=n;j++){const u=j/n-.5,th=a+u*arc,w=1.4*(1-Math.abs(u)*2);for(let q=-w*.5;q<=w*.5+.01;q+=.5)dot(buf,ax+Math.cos(th)*(r+q),ay+Math.sin(th)*(r+q),c,k);}}
   class Particles{
@@ -108,11 +112,11 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
             if(this.edge&&k>.55&&p.max-p.life>.045)buf.line(ax-ux*len*.5,ay-uy*len*.5+1,ax,ay+1,C[4]);
             buf.line(ax-ux*len,ay-uy*len,ax-ux*len*.4,ay-uy*len*.4,k>.6?C[3]:C[4]);buf.line(ax-ux*len*.45,ay-uy*len*.45,ax,ay,hot);if(k>.7)buf.set(px,py,C[0]);light.glow(ax,ay,3,hot,.45*k);break;}
           case PT.SHARD:{if(!(k>.35||bayer(px,py)<k/.35))break;const o=p.rest?(p.seed|0)%2:((p.max-p.life)*14+p.seed|0)%3,L=p.size;
-            if(o===0){for(let i=0;i<L;i++)buf.set(px+i,py-i,i===L-1?C[0]:C[1]);buf.set(px+1,py,C[4]);buf.set(px,py+1,C[4]);}
-            else if(o===1){for(let i=0;i<L;i++)buf.set(px+i,py,i===0?C[0]:C[2]);buf.set(px,py-1,C[1]);buf.set(px+1,py+1,C[4]);}
-            else{for(let i=0;i<L;i++)buf.set(px,py-i,i===L-1?C[0]:C[1]);buf.set(px+1,py,C[4]);}
+            if(o===0){for(let i=0;i<L;i++)buf.set(px+i,py-i,i===L-1?C[0]:C[2]);buf.set(px+1,py,C[5]);buf.set(px,py+1,C[5]);}
+            else if(o===1){for(let i=0;i<L;i++)buf.set(px+i,py,i===0?C[0]:C[2]);buf.set(px,py-1,C[1]);buf.set(px+1,py+1,C[5]);}
+            else{for(let i=0;i<L;i++)buf.set(px,py-i,i===L-1?C[0]:C[2]);buf.set(px+1,py,C[5]);}
             if(!p.rest)light.glow(ax,ay,2,C[2],.2*k);break;}
-          case PT.EMBER:{if(!p.rest){const sp=Math.hypot(p.vx,p.vy)||1,len=Math.min(4,1+sp*.006);buf.line(ax-p.vx/sp*len,ay-p.vy/sp*len,ax,ay,C[3]);buf.set(px,py,k>.6?C[1]:C[2]);light.glow(ax,ay,2,C[3],.35*k);}
+          case PT.EMBER:{if(!p.rest){const sp=Math.hypot(p.vx,p.vy)||1,len=Math.max(2,Math.min(4,1+sp*.008));buf.line(ax-p.vx/sp*len,ay-p.vy/sp*len,ax,ay,C[3]);buf.set(px,py,C[2]);light.glow(ax,ay,2,C[3],.3*k);}
             else if(k>.45||bayer(px,py)<k/.45){const c=k>.7?C[2]:k>.45?C[3]:C[4];buf.set(px,py,c);if(k>.6)buf.set(px+1,py,C[3]);if(k>.6)light.glow(ax,ay,2,C[3],.25);}break;}
           case PT.CHIP:if(k>.25||bayer(px,py)<k*4){buf.set(px,py,p.col);if(p.size>=2){buf.set(px+1,py,p.col);buf.set(px,py+1,scale(p.col,.8));}}break;
           case PT.DUST:buf.alphaDisc(ax,ay,p.size*(.6+(1-k)*.9),p.col,Math.pow(k,1.3)*.7);break;
@@ -123,12 +127,12 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
      (0.19 rad, ricochet 0.38) toward the side it travels, so the star stretches along the blow, the ring shows its open (upper) side,
      sparks spray forward-up, and grey-violet chips (the surface: #4a3f69 tinted 20% by the creature) fall to the ground row,
      with a dust kick at the feet for low hits and a smoke wisp. Size 0.62 (crit 0.85, bosses x1.15): about a third of the hero's height. */
-  let seed=1;const SURF=hex('#4a3f69'),SMOKE_LIT=hex('#8a8296');
+  let seed=1;const SURF=hex('#4a3f69'),SMOKE_LIT=hex('#aaa4b2'),PUFF=hex('#7c86a4');
   function pxImpact(x,y,h,o={}){const a=o.a??0,c0=Math.cos(a),side=Math.abs(c0)>.15?Math.sign(c0):(P&&P.face<0?-1:1),glance=o.kind==='ricochet',
       tilt=(glance?.45:.19)+(o.jit??0),ang=side>0?tilt:Math.PI-tilt,hp=Math.max(0,Math.round(h/PIX)),S=o.size??.62,
-      W=PERF.lite?128:144,HH=Math.max(60,hp+40),AX=side>0?44:W-44,low=hp<=20;
-    return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:S,ramp:o.ramp,ground:c.y,surface:o.surface??SURF,scorch:hp<4,starK:1.2,sparkLife:1.3,smokeK:1.3,smokeR:1.3,smokeCol:SMOKE_LIT,shards:o.ramp===FROST?4:0,
-      sparks:PERF.lite?.9:1.25,sparkSpeed:.85,streakSpeed:1100,kick:low?c.y:undefined,seed:seed++,shake:PXK.shake}),{x,y,w:W,hh:HH,ax:AX,ay:HH-12,pri:o.pri??1,lamp:o.lamp});}
+      W=PERF.lite?128:144,HH=Math.max(64,hp+48),AX=side>0?44:W-44,low=hp<=20;
+    return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:S,ramp:o.ramp,ground:c.y,surface:o.surface??SURF,scorch:hp<4,starK:1.2,sparkLife:1.3,smokeK:1,smokeR:.8,smokeCol:SMOKE_LIT,puff:PUFF,chips:GREYBLUE,shards:o.ramp===FROST?4:0,
+      sparks:PERF.lite?.9:1.25,sparkSpeed:.85,streakSpeed:900,kick:low?c.y:undefined,seed:seed++,shake:PXK.shake}),{x,y,w:W,hh:HH,ax:AX,ay:HH-12,pri:o.pri??1,lamp:o.lamp});}
   /* damage-colour ramps: SF-style rampOf, with the last step pushed to a deep cool shadow so the ramp ends dark */
   const DEEP=hex('#1c1430'),RAMPS={};
   /* the game's damage colours are pastel tints (#bfefff, #d8b8ff...): pull them to 2.2x saturation before ramping, icy blues use FROST, warm tints SF's WARM */
