@@ -1,21 +1,23 @@
 /* WAYFINDER (original, in Sprite Fusion's style): a trail of small gold chevrons lying on the ground that leads to the next checkpoint along a
    walkable route (A* over the tile grid, recomputed twice a second), so "follow the arrow" never means walking into a wall or a river.
    It shows while the goal is more than 7 tiles away, outside combat, dialogs and cinematics, and only with the quest tracker switched on.
-   Recipe (per chevron, a 24 x 52 art px 'flat' ground decal; pri 0, so the bridge redraws it every 2nd frame):
-   - Ground grid: the camera looks down at ~0.52 rad, so the ground squashes vertically by sin(pitch) ~0.5. Every art pixel of the
-     chevron is drawn as 1 column x K = 2 rows of the flat canvas, so on screen it reads as one square sprite pixel lying on the ground.
+   Recipe (per chevron, a 24 x 32 art px billboard standing on the route at ground height; pri 0, so the bridge redraws it every 2nd frame):
+   - Ground read: the chevron is drawn as the camera sees a shape lying on the ground (ground depth shrinks to SQ = 0.36 of its width on
+     screen, measured in game), standing at h = 0 with its lowest row on the anchor, so it never floats and never sinks into kerbs or steps
+     the way a deep flat decal does. Sprites write no depth, so a chevron that a nearer prop or character covers on screen (the notice board,
+     a lamp post) dithers out over 0.15 s instead of showing through it.
    - Placement: from 1.6 tiles ahead of the hero, one chevron every 1.75 tiles (~1.5 hero widths) along the route (Chaikin-smoothed),
-     up to 9 (6 in lite mode); each points along the route as the camera sees it (direction averaged over +-0.7 tiles).
-   - Shape: a compact notched dart ">": tip 5 px ahead, wings 5.5 px out and 3.5 px back, tail notch cut 3 px deep (12 x 9 px), a closed
-     1 px dark amber rim and a 1 px darker drop row on its near side (an inlay in the ground). Top-lit: open space above -> one step lighter,
-     open space below -> one step darker, the spine one step lighter.
+     up to 9 (6 in lite mode); each points along the route as the camera sees it, snapped to 8 ways (direction averaged over +-0.7 tiles).
+   - Shape: a compact ">" 9 px tall and 7 px long, arms 3 px thick (4 px by the tip) with a V-notched tail; diagonals are a 7 x 7 corner,
+     arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it. Top-lit: open space above
+     -> one step lighter, open space below -> one step darker, the spine one step lighter.
    - Pulse: every 1.8 s a pulse runs out from the hero, 0.13 s per chevron (+-0.03 s jitter). Heat h rises over 0.08 s, peaks, then decays
-     as e^(-dt/0.3); the body step is 3 - 3h through the ramp, Bayer-dithered between neighbouring steps so it dithers back down to gold.
+     as e^(-dt/0.3); the body step is 3.4 - 3.4h through the ramp, Bayer-dithered between neighbouring steps so it dithers back down to gold.
      Rest brightness varies +-0.05 per chevron. Chevrons past the 4th Bayer-dither out toward the 9th.
    - The hottest chevron (h > .78) carries a 1 px cross glint on its tip (white core, cream arm, pale cyan arm ends); as the pulse passes,
      3 motes of 1 px rise 15 px over 0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
-   - Light: a faint ground pool (radius 11, 0.08 + 0.14 h, #c08840) under every chevron and a bloom halo (round on screen, 9 px,
-     0.55 h^1.5, #f0c060) round the hot one.
+   - Light: a faint ground glow pool (12 x 4.5 px ellipse, 0.12 + 0.2 h, #c08840) under every chevron and a bloom halo (10 x 9 px,
+     0.8 h^1.5, #f0c060) round the hot one.
    - Palette: R0 #fffbea warm white, R1 #fff0c2 cream, R2 #f5dc90 pale yellow, R3 #d9b05c muted gold, R4 #a97c34 old gold,
      R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (glint arm ends only).
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
@@ -56,12 +58,17 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
       st.h[k]=d<-.08?0:d<0?1+d/.08:Math.exp(-d/.3);}}
   /* sprites (props, the notice board, characters) do not write depth, so a ground decal behind one would show through it: find the
      chevrons a nearer sprite covers on screen and dither them out (st.oc eases to 1 over .15 s) */
-  function occlude(dt){const n=st.pts.length,O=st.occ;O.fill(0);if(!n)return;const S=[];
+  function occlude(dt){const n=st.pts.length,O=st.occ;O.fill(0);if(!n)return;const S=[],AD=ATL.data,AW=ATL.w;
     for(let k=0;k<n;k++){const c=st.pts[k],q=toScreen(c.x,0,c.y,VW,VH);S.push(q);}
     for(let i=0,m=SPR.length;i<m;i++){const s=SPR[i],f=s.f;if(!f||!(f.oc||f.ch))continue;const kk=PIX*s.s*(f.k||1),ky=kk*(s.sy||1),A=f.ay*ky;if(A<44)continue;
-      const kx=kk*(s.sx||1),l=s.x-(s.flip?f.w-f.ax:f.ax)*kx,r=l+f.w*kx,cut=(r-l)*.18;
-      for(let k=0;k<n;k++){if(O[k])continue;const c=st.pts[k];if(s.y<=c.y+4||s.y>c.y+8*T||c.x<l+cut||c.x>r-cut)continue;
-        const top=toScreen(s.x,s.h+A*CAM.cp,s.y-A*CAM.sp,VW,VH),bot=toScreen(s.x,s.h,s.y,VW,VH);if(S[k].y>top.y+3&&S[k].y<bot.y)O[k]=1;}}
+      const kx=kk*(s.sx||1),l=s.x-(s.flip?f.w-f.ax:f.ax)*kx,r=l+f.w*kx;let top=null,bot=null;
+      for(let k=0;k<n;k++){if(O[k])continue;const c=st.pts[k];if(s.y<=c.y+4||s.y>c.y+8*T||c.x<l-14||c.x>r+14)continue;
+        if(!top){top=toScreen(s.x,s.h+A*CAM.cp,s.y-A*CAM.sp,VW,VH);bot=toScreen(s.x,s.h,s.y,VW,VH);}const fy=(S[k].y-top.y)/((bot.y-top.y)||1);if(fy<-.05||fy>1)continue;
+        /* the sprite's own pixels round the chevron (about its size, 6 x 4 art px each way): any opaque one hides it */
+        if(!AD||f.t){if(c.x>l+(r-l)*.18&&c.x<r-(r-l)*.18)O[k]=1;continue;}const col=(c.x-l)/kx,row=fy*f.ay,cw=Math.ceil(14/kx),rh=Math.ceil(10/ky);let hit=0;
+        for(let y=Math.max(0,Math.floor(row-rh));y<=Math.min(f.h-1,row+rh)&&!hit;y++)for(let x=Math.max(0,Math.floor(col-cw));x<=Math.min(f.w-1,col+cw);x++){
+          const sx=s.flip?f.w-1-x:x;if(AD[(f.y+y)*AW+f.x+sx]){hit=1;break;}}
+        if(hit)O[k]=1;}}
     for(let k=0;k<NMAX;k++)st.oc[k]=O[k]?Math.min(1,st.oc[k]+dt/.15):Math.max(0,st.oc[k]-dt/.15);}
   /* ---------- one chevron (Sprite Fusion shape: update / draw / done / stop), a flat decal on the route ---------- */
   function chevron(k){let stop=false,fade=0;const base=.05+(hash(k,7)-.5)*.1;
@@ -89,7 +96,7 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
           else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[5],a);
           else if(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[6],a*.6);}
         /* light: a faint pool on the ground (an 11 x 4 px ellipse) under every chevron and a round bloom halo round the hot one */
-        eglow(light,CX+.5,CY+1,11,4,POOL,(.08+.14*h)*a);if(h>.12&&!PERF.lite)eglow(light,CX+.5,CY+.5,10,9,HALO,.8*Math.pow(h,1.5)*a);
+        eglow(light,CX+.5,CY+1,12,4.5,POOL,(.12+.2*h)*a);if(h>.12&&!PERF.lite)eglow(light,CX+.5,CY+.5,10,9,HALO,.8*Math.pow(h,1.5)*a);
         /* the cross glint on the tip of the hottest chevron */
         if(h>.78){const gx=CX+tx,gy=CY+ty,L=h>.93?3:2;put(buf,gx,gy,R[0],1);
           for(let s=1;s<=L;s++){const col=s===1?R[1]:s===L?CYAN:R[1];put(buf,gx+s,gy,col,1);put(buf,gx-s,gy,col,1);put(buf,gx,gy-s,col,1);put(buf,gx,gy+s,col,1);}
