@@ -11836,14 +11836,18 @@ onEv('resetWorld',pxfx_clear);onEv('respawn',pxfx_clear);
 
 /* ---------- the lab: open the game with #vfxlab for a panel that plays every effect next to the hero ---------- */
 function pxLabPlay(id){const e=PXLAB.find(q=>q.id===id);if(!e||!P)return false;try{e.play(P.x+(P.face<0?-90:90),P.y+10);}catch(err){console.error(err);return false;}return true;}
+/* a small "FX" tab at the left edge, under the portrait; it opens a compact list and folds itself away after an effect is played on
+   narrow screens, so the effect is never hidden behind it. Shown with #vfxlab in the URL, or when window.EMBERVALE_VFXLAB is set. */
 function pxLabUI(){if(document.getElementById('pxlab'))return;const d=document.createElement('div');d.id='pxlab';
-  d.style.cssText='position:fixed;right:8px;top:64px;z-index:60;max-height:72vh;overflow:auto;background:rgba(14,12,22,.86);border:1px solid #c8a04a;border-radius:6px;padding:6px;font:12px "Pixelify Sans",system-ui,sans-serif;color:#f4e8c8;width:220px';
+  d.style.cssText='position:fixed;left:max(6px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 78px);z-index:60;font:12px "Pixelify Sans",system-ui,sans-serif;color:#f4e8c8;pointer-events:auto';
   const cats={};for(const e of PXLAB)(cats[e.cat]||(cats[e.cat]=[])).push(e);
-  let h='<b style="display:block;margin:2px 0 6px;color:#ffd27a">Pixel VFX lab</b>';
-  for(const c in cats){h+=`<div style="margin:6px 0 2px;color:#c8b8f8">${esc(c)}</div>`;for(const e of cats[c])h+=`<button data-px="${esc(e.id)}" style="display:block;width:100%;text-align:left;margin:1px 0;padding:3px 6px;background:#241e36;color:#f4e8c8;border:1px solid #3a3256;border-radius:3px;cursor:pointer">${esc(e.name)}${e.src==='sf'?' <span style="color:#7fe0ff">SF</span>':''}</button>`;}
-  d.innerHTML=h;d.addEventListener('click',ev=>{const b=ev.target.closest('button[data-px]');if(b)pxLabPlay(b.dataset.px);});
-  d.addEventListener('pointerdown',ev=>ev.stopPropagation());document.body.appendChild(d);}
-onEv('startGame',()=>{if(/vfxlab/.test(location.hash))later(.5,pxLabUI);});
+  let h='<button data-pxt="1" style="padding:4px 9px;background:rgba(20,16,30,.82);color:#ffd27a;border:1px solid #c8a04a;border-radius:5px;font:inherit;cursor:pointer">FX ▸</button>'+
+    '<div data-pxl="1" hidden style="margin-top:4px;width:min(190px,46vw);max-height:min(56vh,420px);overflow:auto;background:rgba(14,12,22,.88);border:1px solid #c8a04a;border-radius:6px;padding:4px">';
+  for(const c in cats){h+=`<div style="margin:5px 2px 2px;color:#c8b8f8">${esc(c)}</div>`;for(const e of cats[c])h+=`<button data-px="${esc(e.id)}" style="display:block;width:100%;text-align:left;margin:1px 0;padding:3px 6px;background:#241e36;color:#f4e8c8;border:1px solid #3a3256;border-radius:3px;font:inherit;cursor:pointer">${esc(e.name)}</button>`;}
+  d.innerHTML=h+'</div>';const L=d.querySelector('[data-pxl]'),B=d.querySelector('[data-pxt]'),set=o=>{L.hidden=!o;B.textContent=o?'FX ◂':'FX ▸';};
+  d.addEventListener('click',ev=>{if(ev.target.closest('[data-pxt]')){set(L.hidden);return;}const b=ev.target.closest('button[data-px]');if(!b)return;pxLabPlay(b.dataset.px);if(innerWidth<900)set(false);});
+  for(const k of ['pointerdown','touchstart','mousedown'])d.addEventListener(k,ev=>ev.stopPropagation(),{passive:true});document.body.appendChild(d);}
+onEv('startGame',()=>{if(/vfxlab/.test(location.hash)||window.EMBERVALE_VFXLAB)setTimeout(pxLabUI,400);});
 
 /* ---------- event taps: game moments the effect modules subscribe to with onEv (one wrapper each, in the house style) ----------
    pxHit (e, dmg, src, opt, crit)  a hit that landed on an enemy (opt.dot for damage over time; nodes excluded)
@@ -14912,7 +14916,7 @@ const {pxSnowleaves,pxSnowleavesTree,pxSnowleavesRustle,pxSnowleavesBough,pxSnow
 
   /* ---------- Embervale: snow slabs ---------- */
   const SNOWZ={snowfield:{d:1,wind:24},frostholm:{d:.6,wind:10},whitepine:{d:.55,wind:6},storm:{d:.8,wind:130,streak:1},peak:{d:.5,wind:30,F:VIOLET},g3downs:{d:.8,wind:16},g3coast:{d:.85,wind:34}};
-  const DBG=true;
+  const DBG=false;
   const SW=240,SN={H:[],S:[],key:'',kq:'',t:0,full:true,force:null,live:{d:0,wind:14,streak:0,F:FLAKE_EV}};
   let sseed=1;
   /* a slab sits at the camera target + its offset, snapped so it moves by whole art pixels (x by PIX, depth by PIX / sin(pitch)) */
