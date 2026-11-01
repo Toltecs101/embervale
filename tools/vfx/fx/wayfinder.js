@@ -28,7 +28,7 @@
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
 const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   const R=['#fffbea','#fff0c2','#f5dc90','#d9b05c','#a97c34','#64401a','#2e1c0c'].map(hex),CYAN=hex('#c8f0ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
-  const ELO=[0,-1,-2,-3,-3],EHI=[3,2,0,-1,-2],NMAX=7,STEP=1.75,FIRST=1.6,LOOP=1.8,STAG=.16,SQ=.36,CW=24,LH=32,CX=12,CY=21;
+  const ELO=[0,-1,-2,-3,-3,-4],EHI=[3,2,0,-1,-2,-3],NMAX=12,STEP=1.15,FIRST=2.1,MY=.5,LOOP=2,STAG=.15,SQ=.36,CW=24,LH=32,CX=12,CY=21;
   /* ---------- A* on the tile grid (8 neighbours, no corner cutting); props cost extra so the route keeps to open ground ---------- */
   const NN=MW*MH,GC=new Float32Array(NN),FR=new Int32Array(NN),ST=new Uint32Array(NN),CL=new Uint32Array(NN),HP=new Int32Array(NN),HF=new Float32Array(NN);
   let stamp=0,hn=0;
@@ -53,14 +53,14 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
     return[p[k-1][0]+(p[k][0]-p[k-1][0])*u,p[k-1][1]+(p[k][1]-p[k-1][1])*u];}
   /* points every STEP tiles along the route, starting FIRST tiles out, with the local direction */
   function sample(pts,hx,hy,N){const out=[];if(!pts||pts.length<2)return out;pts[0]=[hx,hy];const p=chaikin(pts),A=[0];
-    for(let k=1;k<p.length;k++)A.push(A[k-1]+Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1]));const tot=A[A.length-1];
+    for(let k=1;k<p.length;k++)A.push(A[k-1]+Math.hypot(p[k][0]-p[k-1][0],(p[k][1]-p[k-1][1])*MY));const tot=A[A.length-1];
     for(let s=FIRST*T;s<=tot-.4*T&&out.length<N;s+=STEP*T){const c=at(p,A,s),f=at(p,A,s+.7*T),b=at(p,A,s-.7*T);out.push({x:c[0],y:c[1],a:Math.atan2(f[1]-b[1],f[0]-b[0])});}
     return out;}
   /* ---------- the shared trail state: heat per chevron, computed once per update ---------- */
   const st={pts:[],t:0,on:false,goal:null,rt:null,re:0,last:'',h:new Float32Array(NMAX),dd:new Float32Array(NMAX),oc:new Float32Array(NMAX),occ:new Uint8Array(NMAX),m:new Uint8Array(CW*LH)};
   function heat(dt){st.t+=dt;const tp=st.t%LOOP;
     for(let k=0;k<NMAX;k++){let d=tp-k*STAG-(hash(k,3)-.5)*.06;d=((d+.3)%LOOP+LOOP)%LOOP-.3;st.dd[k]=d;
-      st.h[k]=d<-.05?0:d<0?1+d/.05:d<.22?1:Math.max(0,1-(d-.22)/.3);}}
+      st.h[k]=d<-.05?0:d<0?1+d/.05:d<.15?1:Math.max(0,1-(d-.15)/.25);}}
   /* sprites (props, the notice board, characters) do not write depth, so a ground decal behind one would show through it: find the
      chevrons a nearer sprite covers on screen and dither them out (st.oc eases to 1 over .15 s) */
   function occlude(dt){const n=st.pts.length,O=st.occ;O.fill(0);if(!n)return;const S=[],AD=ATL.data,AW=ATL.w;
@@ -83,46 +83,53 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
       for(let x=Math.max(0,Math.floor(cx-rx));x<Math.min(CW,cx+rx);x++){const ex=(x+.5-cx)/rx,d=ex*ex+ey*ey;if(d>=1)continue;const f=1-Math.sqrt(d);L.add(x,y,c,f*f*k);}}};
     return{update(dt){fade=stop?Math.max(0,fade-dt/.3):Math.min(1,fade+dt/.4);},
       draw(fr){const c=st.pts[k];if(!c||fade<=0)return;const buf=new Px(fr,fr.color),light=new Px(fr,fr.light),M=st.m;
-        /* fk: 0 near .. 1 farthest. Distance never drops the outline: it dithers holes into the body (up to 40 %), shrinks the shape
-           by 1 px past fk .55, darkens the rim one step and brightens the top edge one more step so far ones hold on grass and cobbles */
-        const h=Math.min(1,st.h[k]+base),dd=st.dd[k],fk=k<3?0:Math.min(1,(k-2.5)/(NMAX-3)),a=fade*(1-st.oc[k]);if(a<=.02)return;
-        const sm=fk>.55?1:0,hot=dd>=0&&dd<.3,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
+        /* every chevron has the same material; only the last two thin their body (outline kept). oc: a nearer sprite covers it, so it
+           drops to a faint dithered ghost (30 %, body only) that still flashes with the pulse, and the route reads through the prop */
+        const n=st.pts.length,h=Math.min(1,st.h[k]+base),dd=st.dd[k],oc=st.oc[k],a=fade*(1-oc),gh=fade*oc*.3;if(a+gh<=.02)return;
+        const hole=k>=n-2?(k-(n-3))*.22:0,hot=dd>=-.02&&dd<.2,big=dd>=-.02&&dd<.15,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
         let ux=Math.cos(c.a),uy=Math.sin(c.a)*SQ;const ul=Math.hypot(ux,uy)||1;ux/=ul;uy/=ul;
-        /* the stepped ground glow under it, drawn first: a 17 x 6 px pool round its foot, a denser dithered core and a sparse dithered rim (the light pool blooms over them) */
-        for(let Y=CY;Y<=CY+7;Y++)for(let x=CX-9;x<=CX+9;x++){const ex=(x+.5-CX-.5)/8.5,ey=(Y+.5-CY-3.5)/3,e=ex*ex+ey*ey;if(e>=1)continue;
-          if(e<.4)put(buf,x,Y,h>.6?R[2]:R[3],(.35+.3*h)*a);else put(buf,x,Y,h>.6?R[3]:R[4],(.12+.2*h)*a);}
+        if(a>.02){/* contact smudge (soft alpha shadow) and the stepped warm ground glow round its foot, drawn first */
+          for(let Y=CY+1;Y<=CY+6;Y++)for(let x=CX-9;x<=CX+9;x++){const ex=(x+.5-CX-.5)/8.5,ey=(Y+.5-CY-3.5)/2.6,e=ex*ex+ey*ey;if(e>=1)continue;
+            if(e<.5)buf.blend(x,Y,R[6],.3*(1-e)*a);if(e<.35)put(buf,x,Y,h>.5?R[1]:R[3],(.25+.35*h)*a);else if(e>.6)put(buf,x,Y,h>.5?R[2]:R[4],(.12+.25*h)*a);}}
         /* the chevron mask on the art grid, the direction snapped to 8 ways so its arms are clean 1:1 stairs or straight runs:
            E is a ">" 9 px tall, 7 px long, arms 3 px thick, 4 px next to the tip, V-notched tail (rows ELO..EHI); SE is its 45-degree
            turn, a 7 x 7 corner, arms 2 px thick, the inside of the corner filled to a V notch; the other six are quarter turns of these.
-           Far ones lose 1 px of arm (|j| <= 3, corner arms from -2). 1 = body, 2 = spine */
-        const d=((Math.round(Math.atan2(uy,ux)/(Math.PI/4))%8)+8)%8,rq=d>>1,dg=d&1,lim=dg?-3+sm:4-sm;
-        M.fill(0);for(let Y=cy-6;Y<=cy+6;Y++)for(let x=CX-6;x<=CX+6;x++){let i=x-CX,j=Y-cy;for(let r=0;r<rq;r++){const t=i;i=j;j=-t;}
+           As the wave passes it grows 1 px (|j| <= 5, corner arms from -4). 1 = body, 2 = spine */
+        const d=((Math.round(Math.atan2(uy,ux)/(Math.PI/4))%8)+8)%8,rq=d>>1,dg=d&1,lim=dg?(big?-4:-3):(big?5:4);
+        M.fill(0);for(let Y=cy-7;Y<=cy+7;Y++)for(let x=CX-7;x<=CX+7;x++){let i=x-CX,j=Y-cy;for(let r=0;r<rq;r++){const t=i;i=j;j=-t;}
           let on=0;if(!dg){const aj=Math.abs(j);if(aj<=lim&&i>=ELO[aj]&&i<=EHI[aj])on=j===0&&i>=0?2:1;}else if(i<=3&&j<=3&&i>=lim&&j>=lim&&(i>=2||j>=2||(i>=0&&j>=0&&i+j>=1)))on=i===j&&i>=1?2:1;
           M[Y*CW+x]=on;}
         let tx=3,ty=dg?3:0;for(let r=0;r<rq;r++){const t=tx;tx=-ty;ty=t;}
-        const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0,lv=3.2-3.2*h,hole=.4*fk;
-        for(let Y=cy-7;Y<=cy+8;Y++)for(let x=CX-7;x<=CX+7;x++){
-          if(m(x,Y)){const edge=!m(x,Y-1);if(!edge&&M[Y*CW+x]!==2&&bayer(x+3,Y+1)<hole)continue;let i=Math.floor(lv+bayer(x,Y));
-            if(edge)i-=fk>.5?2:1;else if(M[Y*CW+x]===2)i--;else if(!m(x,Y+1))i++;put(buf,x,Y,R[Math.max(0,Math.min(4,i))],a);}
-          else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[fk>.5?6:5],a);
-          else if(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[6],a*.6);}
-        /* light: a warm pool on the ground (12 x 4.5 px) under every chevron, a round bloom halo round the pulsing one */
-        eglow(light,CX+.5,CY+1,12,4.5,POOL,(.12+.2*h)*a);if(h>.12&&!PERF.lite)eglow(light,CX+.5,cy+.5,10,9,HALO,.8*Math.pow(h,1.5)*a);
-        /* the pulsing chevron: a white plus glint on the tip, a second small plus twinkling beside it, one pale cyan sparkle pixel */
-        if(hot){const gx=CX+tx,gy=cy+ty,L=dd<.12?2:1;put(buf,gx,gy,R[0],1);
-          for(let s2=1;s2<=L;s2++){const col=s2===L&&L>1?R[2]:R[1];put(buf,gx+s2,gy,col,1);put(buf,gx-s2,gy,col,1);put(buf,gx,gy-s2,col,1);put(buf,gx,gy+s2,col,1);}
-          light.glow(gx+.5,gy+.5,5,R[1],.4*a);
-          const ph=Math.floor(dd/.1),sx=CX+Math.round((hash(k*7+ph,5)-.5)*12),sy=cy-4-Math.round(hash(k*3+ph,9)*3);
-          if(ph<2){put(buf,sx,sy,R[0],a);put(buf,sx-1,sy,R[1],a);put(buf,sx+1,sy,R[1],a);put(buf,sx,sy-1,R[1],a);put(buf,sx,sy+1,R[1],a);}
-          put(buf,CX-tx+(dg?0:-1),cy-5+(ph&1),CYAN,a);}
+        /* ramp: rest body 3.0 (muted gold / old gold), the wave lifts it to 0 (warm white / cream); the fall back is Bayer-dithered
+           between steps, the afterglow behind the wave */
+        const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0,lv=3-3*h;
+        for(let Y=cy-8;Y<=cy+9;Y++)for(let x=CX-8;x<=CX+8;x++){
+          if(m(x,Y)){const edge=!m(x,Y-1),sp=M[Y*CW+x]===2;let i=Math.floor(lv+bayer(x,Y));if(edge||sp)i--;else if(!m(x,Y+1))i++;
+            const col=R[Math.max(0,Math.min(4,i))];if(a>.02){if(!edge&&!sp&&bayer(x+3,Y+1)<hole)continue;put(buf,x,Y,col,a);}else put(buf,x,Y,col,gh+.4*h*oc);}
+          else if(a>.02&&(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1)))put(buf,x,Y,R[5],a);
+          else if(a>.02&&(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1)))put(buf,x,Y,R[6],a*.6);}
+        /* the cream highlight pixel on the tip */
+        if(a>.02)put(buf,CX+tx-Math.sign(tx),cy+ty-Math.sign(ty),R[0],a);
+        const A2=Math.max(a,gh*2);
+        /* light: a warm pool on the ground (12 x 4.5 px), a soft warm-white bloom core on every chevron, a bigger halo on the wave */
+        eglow(light,CX+.5,CY+2.5,12,4.5,POOL,(.14+.24*h)*A2);eglow(light,CX+.5,cy+.5,7,6,HALO,(.16+.5*h)*A2);
+        if(h>.12&&!PERF.lite)eglow(light,CX+.5,cy+.5,11,10,R[1],.5*Math.pow(h,1.5)*A2);
+        /* two four-point plus sparkles per chevron, each on its own period (1.3-2.1 s) and phase, lit for 0.25 s at a new spot each
+           cycle: white core, cream arms, pale cyan tips while large; on the wave both fire at once round the tip */
+        for(let q=0;q<2;q++){const per=1.3+hash(k*2+q,13)*.8,u=st.t/per+hash(k*2+q,17),cyc=Math.floor(u),f=u-cyc,on=hot&&q===0?1:f<.25/per?1:0;if(!on)continue;
+          const ph=hot&&q===0?dd/.2:f*per/.25,L=ph<.5?2:1;let sx,sy;
+          if(hot&&q===0){sx=CX+tx;sy=cy+ty;}else{sx=CX+Math.round((hash(cyc*7+k,5+q)-.5)*14);sy=cy-3-Math.round(hash(cyc*3+k,9+q)*4);}
+          put(buf,sx,sy,R[0],A2);for(let s2=1;s2<=L;s2++){const col=s2===2?CYAN:R[1];put(buf,sx+s2,sy,col,A2);put(buf,sx-s2,sy,col,A2);put(buf,sx,sy-s2,col,A2);put(buf,sx,sy+s2,col,A2);}
+          light.glow(sx+.5,sy+.5,4,R[1],.35*A2);}
+        if(hot&&a>.02)put(buf,CX-tx+(dg?0:-1),cy-5+(Math.floor(dd/.1)&1),CYAN,a);
         /* motes lifting off as the pulse passes */
-        if(dd>=0&&dd<.9&&!PERF.lite)for(let j=0;j<3;j++){const ag=dd-j*.1;if(ag<0)continue;const q=ag/.8;if(q>=1)continue;
+        if(dd>=0&&dd<.9&&!PERF.lite&&a>.02)for(let j=0;j<3;j++){const ag=dd-j*.1;if(ag<0)continue;const q=ag/.8;if(q>=1)continue;
           const mx=Math.round(CX-.5+(hash(k*5+j,11)-.5)*8+Math.sin(ag*9+j*2)*.8),my=Math.round(cy-2-q*15-j);
           put(buf,mx,my,q<.3?R[0]:q<.6?R[1]:R[2],(1-q*q)*a);}},
       done:()=>stop&&fade<=0,stop(){stop=true;}};}
   /* ---------- the trail ---------- */
   const H=[];
-  const nMax=()=>PERF.lite?6:NMAX;
+  const nMax=()=>PERF.lite?8:NMAX;
   function want(){if(!P||P.dead||state!=='play'||!settings.trk||cine||dlg||travelBusy||anyOverlay())return null;if(P.combatT>0)return null;
     const g=questTargetPos();if(!g)return null;if(Math.hypot(g.x-P.x,g.y-P.y)<7*T)return null;return g;}
   function show(on){if(on===st.on)return;st.on=on;if(on){for(let k=0;k<nMax();k++){if(H[k]&&!H[k].dead)continue;const c=st.pts[k]||{x:P.x,y:P.y};
