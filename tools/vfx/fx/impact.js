@@ -2,20 +2,21 @@
    Every melee or projectile hit of the hero lands one on the enemy's near edge, in the damage's colour (SF WARM, a FROST ramp for icy
    blues, else a 2.2x-saturated rampOf ending in a deep violet shadow), size 0.62 (crits 0.85, bosses x1.15): ~third of the hero's height.
    Recipe (size S, SF's surface hit: normal up, blow at a glancing 0.19 rad toward the side it travels, so B = -0.19, forward-up):
-   frame 1 (t <= 1/60) an 8-spike star at 1.4x SF's size (width x1.22): C4 outline / C3 rim / C2 body / C1 inner / C0 centre (3 px),
-   spikes into the surface x0.3, a 1 px white-hot streak along B (1.15x the longest spike, C0 -> C1 -> C2); frame 2 (to 2/60) the same
-   1.25x long, 0.55x thick; warm bloom e^(-t/0.065) (C3 r 26S+8, C1 r 10S+3, +C2 r 16S+4 for 3 frames).
-   0.033-0.13 s the 4 longest open-side spikes break into crescent shards (5-8x their length per s, C2 -> C3 -> C4, dithered);
-   0.033-0.2 s a ring 8 -> 20 S px, only its open (upper) half, C2 body with a crisp C3 outer edge, then C3/C4, dithered out.
-   Sparks 0.1-0.3 s (round(6 + 12S)) within +-0.6 rad of B, 260-900 u/s, 0.45g, drag 2.2, bounce x0.45: C0 head pixel, C1/C2/C3 body,
-   C3/C4 tail, a C4 under-edge while young (reads on pale bodies). 4 embers (0.48-0.58 s) arc down at full g, bounce once x0.25,
-   lie on the ground row as C2/C3 pixels and dither out by ~f34. Secondary layer: 3 + 5S grey-violet chips (#4a3f69 x1.25/x1/x0.7)
-   flung up, falling to the ground row, bounce x0.3, settle, dither; 5 grey-blue ground chips popping at the feet from 0.06-0.12 s;
-   1 + 2S dust discs, a 3-disc dust kick at the feet for low hits, one smoke wisp (SF's smoke ramp).
-   Ricochet: 0.45 rad, no ring, a 0.2 rad spark cone (10 + 12S, 1.2x faster), a 3 px thick white-hot streak along B (1500 u/s for
-   0.16 s) that dithers out over its second half, 2 chips, 3 ground chips, 2 embers (SF's soot scorch only at ground level).
-   Ramps: SF WARM; FROST #fff / #c8f4ff / #7fd8f4 / #3fa0dc / #2c5fae / #1f2f6e; other damage colours 2.2x saturated rampOf ending
-   in deep violet. Canvas 144 x (hit height + 40), anchored 44 px from the side the blow comes from. */
+   frames 1-2 (t <= 2/60) an 8-spike star at 1.2x SF's size in 4 steps: C0 core (<= 2 px), C1 body, C3 rim, C4 1 px dark outline
+   (separates it from white hit-flashed bodies), dotted 1 px radial spike pixels past the open tips, a 1 px streak along B;
+   frame 2 is 1.25x long, 0.5x thick. Bloom e^(-t/0.045): C3 r 14S+5 at 0.6, C0 r 5S+2 at 0.4.
+   0.033-0.13 s the 4 longest open-side spikes break into crescent shards (C2 -> C3 -> C4, dithered); 0.033-0.2 s a ring 6 -> 14 S px,
+   open (upper) half only: 2 px C1 leading arc, then a C3 arc with a lighter C2 inner pixel on its front side, C4 dithered out.
+   Sparks 0.13-0.39 s (round((6 + 12S) x 1.25)) within +-0.6 rad of B, 0.85x SF speed, 0.45g, drag 2.2, bounce x0.45, >= 3 px dashes:
+   C0 head pixel, C1/C2 body, C3/C4 tail, a C4 under-edge while young. 6 embers launched at 0.1-0.15 s up and to both sides
+   (2-4 px C3 dashes with a C2 head) arc down at full g, bounce once, lie on the ground row and dither out by ~f40.
+   Secondary layer: 3 + 5S grey-blue chips (#8a8cab / #6e7090 / #4f4d68) flung up at 0.1 s and falling to the ground row;
+   6 more popping at the feet (0.75-0.95 s); a ground dust kick, a lingering dusty-blue (#7c86a4) ground puff, a small light grey
+   smoke wisp at the hit. Frost adds 4 tumbling 2-3 px ice slivers (C0 tip, C2 body, C5 edge) that fall with the debris.
+   Ricochet: 0.45 rad, no ring, a contact flash disc, a 0.14 rad spark cone, a 2-3 px streak along B (900 u/s for 0.16 s) broken into
+   stepped 2-3 px clusters with gaps (C0/C1 core, C3/C4 edges), dithering out; at the end of its travel a 2-frame cross burst and
+   5 embers that fly, bounce and lie. Ramps: SF WARM; FROST #f2faff / #cdeaf4 / #96cfe4 / #5d93c8 / #2e6a80 / #26336a; other damage
+   colours 2.2x saturated rampOf ending in deep violet. Canvas 144 x (hit height + 48), anchored 44 px from the side the blow comes from. */
 const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp,hex,rgb,cl:clamp,TAU,PXW:PX}=PXK;
   const SOOT=hex('#0d0a12'),SMOKE_RAMP=['#7b6f72','#5d5660','#433d48','#2b2630','#1a171e'].map(hex),WARM_RAMP=['#ffffff','#fff3a6','#ffe26b','#ff8a2a','#f2561d','#c9281f'].map(hex),SMOKE=hex('#6a6278');
   const GRAVITY=1900,PT={SPARK:0,CHIP:1,DUST:2,SMOKE:3,EMBER:4,SHARD:5},GREYBLUE=['#8a8cab','#6e7090','#4f4d68'].map(hex);
