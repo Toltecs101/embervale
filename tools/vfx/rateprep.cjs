@@ -38,9 +38,12 @@ for(const m of process.argv.slice(2)){const src=fs.readFileSync(path.join(D,'fx'
   const out=path.join('runs','rate-'+m),frames=LONG.has(m)?'0,15,30,60,90,120':'0,2,4,8,14,22,34,50';
   const a=['shot.cjs','--out',out,'--fx',m,'--play',labs.map(l=>l.id).join(','),'--frames',frames];if(ZONE[m])a.push('--zone',ZONE[m]);
   let log='';try{log=execFileSync('node',a,{cwd:D,encoding:'utf8',timeout:1500000});}catch(e){log=String(e.stdout||'')+String(e.stderr||'');}
+  /* a close-up pass (tight crop, 3x) so 1-2 px sparks, chips and dither survive the sheet's downscale */
+  const out2=out+'-close',a2=a.slice();a2[2]=out2;a2.push('--crop','200x130','--zoom','3');
+  try{execFileSync('node',a2,{cwd:D,encoding:'utf8',timeout:1500000});}catch(e){}
   let errors=[];try{errors=JSON.parse(log.slice(log.indexOf('{\n'))).errors;}catch(e){errors=['capture failed: '+log.slice(-300)];}
   const refs=[];for(const s of REFS[m]||[]){const d=path.join(D,'runs','ref',s);if(fs.existsSync(d))for(const f of fs.readdirSync(d).sort())if(f.endsWith('_sheet.png'))refs.push(path.join(d,f));}
   const man={module:m,summary:SUMMARY[m]||'',refKind:ORIGINAL.has(m)?'style reference: the closest Sprite Fusion effects rendered from their own source (this effect is original, so match the style, not the subject)':'Sprite Fusion\'s own source of the ported effect, rendered on a dark floor at the same frame times',
-    refs,items:labs.map(l=>({name:l.name,lab:l.id,game:[path.join(D,out,l.id+'_sheet.png')].filter(f=>fs.existsSync(f)),notes:`frames ${frames} at 60 fps; the effect is fired next to the hero (left of centre) in the game scene`}))};
+    refs,items:labs.map(l=>({name:l.name,lab:l.id,game:[path.join(D,out,l.id+'_sheet.png'),path.join(D,out2,l.id+'_sheet.png')].filter(f=>fs.existsSync(f)),notes:`frames ${frames} at 60 fps; the effect is fired next to the hero (left of centre) in the game scene; the second sheet is a 3x close-up of the same frames`}))};
   fs.writeFileSync(path.join(D,out,'manifest.json'),JSON.stringify(man,null,1));
   console.log(`${m}: ${labs.length} items, ${refs.length} refs, errors ${errors.length}${errors.length?' '+String(errors[0]).slice(0,160):''}`);}
