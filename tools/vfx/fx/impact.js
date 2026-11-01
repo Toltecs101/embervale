@@ -36,8 +36,8 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
     const shards=[...spikes].filter(p=>open(p.a)).sort((p,q)=>q.len-p.len).slice(0,4).map(s=>({a:s.a+R.range(-.15,.15),r:s.len*.8,v:s.len*R.range(5,8),arc:R.range(.35,.6)}));
     let t=0;
     const n=Math.round(((glance?4:6)+(glance?8:12)*S)*(o.sparks??1)),SL=o.sparkLife??1;
-    for(let i=0;i<n;i++){const back=!onSurface&&R.chance(.2),a=(back?A+Math.PI:B)+R.range(-1,1)*(glance?.14:onSurface?.6:.6),sp=R.range(260,900)*(.6+.4*S)*(glance?.85:1);
-      ps.spawn(PT.SPARK,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-(glance?20:60),(glance?R.range(.2,.4):R.range(.1,.3))*SL);}
+    for(let i=0;i<n;i++){const back=!onSurface&&R.chance(.2),a=(back?A+Math.PI:B)+R.range(-1,1)*(glance?.14:onSurface?.6:.6),sp=R.range(260,900)*(.6+.4*S)*(glance?.7:1)*(o.sparkSpeed??1);
+      ps.spawn(PT.SPARK,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-(glance?20:60),(glance?R.range(.25,.42):R.range(.1,.3))*SL);}
     if(onSurface){const sc=o.surface,dc=mix(sc,rgb(150,140,150),.35);
       for(let i=0;i<(glance?2:Math.round(3+5*S));i++){const a=(glance?B:N)+R.range(-.8,.8)*(glance?.6:1),sp=R.range(150,420)*S;
         ps.spawn(PT.CHIP,X,Y+ny*2,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.8,1.4),R.chance(.5)?scale(sc,1.25):R.chance(.5)?sc:scale(sc,.7),R.chance(.3)?2:1);}
@@ -47,10 +47,10 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
       for(let i=0;i<3;i++){const sd=(i-1)||R.sign(),sp=R.range(40,110)*S;ps.spawn(PT.DUST,X+sd*R.range(2,6),g-R.range(1,3),sd*sp+Math.cos(B)*30,-R.range(6,22),R.range(.45,.6),dc,R.range(1.6,2.6)*Math.sqrt(S),R.range(.06,.1));}
       if(!glance)ps.spawn(PT.SMOKE,X+Math.cos(B)*8,g-4,Math.cos(B)*14,R.range(-22,-12),R.range(.5,.6),SMK,R.range(2,2.8)*Math.sqrt(S),.08);
       for(let i=0,m=glance?3:6;i<m;i++)ps.spawn(PT.CHIP,X+R.range(-6,12)*PX*Math.sign(Math.cos(B)||1),g-1,R.range(-50,50)+Math.cos(B)*40,-R.range(60,170),R.range(.55,.75),GREYBLUE[i%3],R.chance(.35)?2:1,R.range(.06,.12));}
-    for(let i=0,m=glance?0:5;i<m;i++){const a=B+R.range(-.7,.3),sp=R.range(200,460)*S;ps.spawn(PT.EMBER,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-R.range(60,180),R.range(.48,.58));}
+    for(let i=0,m=glance?0:6;i<m;i++){const a=B+R.range(-.8,.3),sp=R.range(140,380)*S;ps.spawn(PT.EMBER,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-R.range(60,180),R.range(.48,.58));}
     for(let i=0;i<(o.shards??0);i++){const a=N+R.range(-.9,.9)+Math.cos(B)*.5,sp=R.range(160,380)*S;ps.spawn(PT.SHARD,X,Y,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.6,.8),0,R.chance(.5)?3:2,R.range(0,.03));}
     o.shake?.(.03*S);
-    const tx=Math.cos(B),ty=Math.sin(B),STREAK=.16,SPEED=1500,scorch=o.scorch??true,scT=scorch===true?1.1:scorch===false?0:+scorch||0,scK=scorch===true?.9:scT;
+    const tx=Math.cos(B),ty=Math.sin(B),STREAK=.16,SPEED=o.streakSpeed??1500,scorch=o.scorch??true,scT=scorch===true?1.1:scorch===false?0:+scorch||0,scK=scorch===true?.9:scT;
     const sx=Math.cos(N+Math.PI/2)*Math.sign(Math.cos(A-(N+Math.PI/2))||1),sy=Math.sin(N+Math.PI/2)*Math.sign(Math.cos(A-(N+Math.PI/2))||1);
     return{
       update(dt){t+=dt;ps.update(dt);},
@@ -128,7 +128,7 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
       tilt=(glance?.45:.19)+(o.jit??0),ang=side>0?tilt:Math.PI-tilt,hp=Math.max(0,Math.round(h/PIX)),S=o.size??.62,
       W=PERF.lite?128:144,HH=Math.max(60,hp+40),AX=side>0?44:W-44,low=hp<=20;
     return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:S,ramp:o.ramp,ground:c.y,surface:o.surface??SURF,scorch:hp<4,starK:1.2,sparkLife:1.3,smokeK:1.3,smokeR:1.3,smokeCol:SMOKE_LIT,shards:o.ramp===FROST?4:0,
-      sparks:PERF.lite?.8:1,kick:low?c.y:undefined,seed:seed++,shake:PXK.shake}),{x,y,w:W,hh:HH,ax:AX,ay:HH-12,pri:o.pri??1,lamp:o.lamp});}
+      sparks:PERF.lite?.9:1.25,sparkSpeed:.85,streakSpeed:1100,kick:low?c.y:undefined,seed:seed++,shake:PXK.shake}),{x,y,w:W,hh:HH,ax:AX,ay:HH-12,pri:o.pri??1,lamp:o.lamp});}
   /* damage-colour ramps: SF-style rampOf, with the last step pushed to a deep cool shadow so the ramp ends dark */
   const DEEP=hex('#1c1430'),RAMPS={};
   /* the game's damage colours are pastel tints (#bfefff, #d8b8ff...): pull them to 2.2x saturation before ramping, icy blues use FROST, warm tints SF's WARM */
