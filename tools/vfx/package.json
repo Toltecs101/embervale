@@ -1,0 +1,17 @@
+{
+  "name": "embervale-vfx",
+  "private": true,
+  "description": "Builds Embervale's pixel VFX modules into index.html and tests them in the real game",
+  "scripts": {
+    "build": "node assemble.cjs --ship",
+    "shot": "node shot.cjs",
+    "integ": "node integ.cjs --all",
+    "gallery": "node gallery.cjs --all"
+  },
+  "dependencies": {
+    "pixelfx": "github:patch-gg/pixelfx#a84159688af3ca37a4be05a0d422b94451b2e24e"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
