@@ -23,7 +23,7 @@ const plays=(arg('--play','')||'').split(',').filter(Boolean),runs=arg('--run')?
   const errs=[];pg.on('console',m=>{if(m.type()==='error'&&!/ERR_FAILED|fonts\.g/.test(m.text()))errs.push(m.text().slice(0,400));});pg.on('pageerror',e=>errs.push('PAGEERROR '+String(e.stack||e.message).slice(0,600)));
   await pg.route('**/fonts.googleapis.com/**',r=>r.abort());await pg.route('**/fonts.gstatic.com/**',r=>r.abort());
   await pg.addInitScript(()=>{const q=[];window.requestAnimationFrame=cb=>{q.push(cb);return q.length;};window.cancelAnimationFrame=()=>{};let T=1000;
-    window.__step=(n,dt)=>{dt=dt||1000/60;for(let i=0;i<n;i++){T+=dt;const a=q.splice(0);for(const cb of a)cb(T);}return T;};
+    window.__step=(n,dt)=>{dt=dt??1000/60;for(let i=0;i<n;i++){T+=dt;const a=q.splice(0);for(const cb of a)cb(T);}return T;};
     try{localStorage.setItem('embervale-q','2');}catch(e){}});
   await pg.goto('file://'+path.resolve(html));
   await pg.waitForFunction(()=>window.__T&&!document.querySelector('#bNew').disabled,null,{timeout:180000,polling:100});

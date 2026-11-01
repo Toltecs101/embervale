@@ -1,8 +1,17 @@
-/* IMPACT (Sprite Fusion "Impact", MIT, ported): a hit's star stretched along the blow breaking into shards, a ring, hot sparks.
-   Every melee or projectile hit of the hero lands one, in the damage's colour (rampOf), sized by the hit (crits 1.35x).
-   Recipe (size S): frame 1 (t <= 1/60) an 8-spike star, white core / C2 inner / C1 body / C4 rim; frame 2 (to 2/60) 1.25x long,
-   0.55x thick, one ramp step cooler; 0.033-0.13 s the 4 longest spikes break into crescent shards; 0.033-0.2 s a ring 8 -> 20 px;
-   sparks 0.1-0.3 s (round(6 + 12S)), 0.45g, drag 2.2, bouncing x0.45 on the ground row; light pop e^(-t/0.05). */
+/* IMPACT (Sprite Fusion "Impact", MIT, ported): a hit's star stretched along the blow breaking into shards, a half ring, hot sparks, grey-violet chips, dust and a smoke wisp.
+   Every melee or projectile hit of the hero lands one on the enemy's near edge, in the damage's colour (SF WARM, a FROST ramp for icy
+   blues, else a 2.2x-saturated rampOf ending in a deep violet shadow), size 0.62 (crits 0.85, bosses x1.15): ~third of the hero's height.
+   Recipe (size S, SF's surface hit: normal up, blow at a glancing 0.19 rad toward the side it travels, so B = -0.19, forward-up):
+   frame 1 (t <= 1/60) an 8-spike star, white core / C2 inner / C1 body / C4 rim, spikes into the surface x0.3; frame 2 (to 2/60)
+   1.25x long, 0.55x thick, one ramp step cooler; 0.033-0.13 s the 4 longest open-side spikes break into crescent shards (5-8x their
+   length per s); 0.033-0.2 s a ring 8 -> 20 S px, only its open (upper) half, C1 -> C2 -> C3, dithered out; sparks 0.1-0.3 s
+   (round((6 + 12S) x 1.35)), 260-900 u/s within +-0.85 rad of B, 0.45g, drag 2.2, bouncing x0.45 on the ground row, C1/C2/C3 head,
+   C4 tail; secondary layer: 3 + 5S grey-violet chips (#4a3f69 tinted 20% by the creature, x1.25 / x1 / x0.7 steps) flung up and
+   falling at full g to the ground row, bounce x0.3, settle and dither out (0.8-1.4 s); 3 + 4S dust discs; a dust kick of 3 discs
+   at the feet for low hits; one smoke wisp (0.8-1.3 s) rising through SF's smoke ramp; light pop e^(-t/0.05).
+   Ricochet: 0.38 rad, a 0.3 rad spark cone (10 + 12S, 1.2x faster), a white-hot streak along B (1500 u/s for 0.16 s) and a hot
+   scrape fading in 0.28 s (SF's 0.9 s scorch with soot only when the hit is at ground level). Canvas 144 x (hit height + 40),
+   anchored 44 px from the side the blow comes from, so the forward spray stays inside it. */
 const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp,hex,rgb,cl:clamp,TAU,PXW:PX}=PXK;
   const SOOT=hex('#0d0a12'),SMOKE_RAMP=['#7b6f72','#5d5660','#433d48','#2b2630','#1a171e'].map(hex),WARM_RAMP=['#ffffff','#fff3a6','#ffe26b','#ff8a2a','#f2561d','#c9281f'].map(hex),SMOKE=hex('#6a6278');
   const GRAVITY=1900,PT={SPARK:0,CHIP:1,DUST:2,SMOKE:3};
@@ -22,7 +31,7 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
     const open=a=>!onSurface||Math.cos(a-N)>-.25;
     const shards=[...spikes].filter(p=>open(p.a)).sort((p,q)=>q.len-p.len).slice(0,4).map(s=>({a:s.a+R.range(-.15,.15),r:s.len*.8,v:s.len*R.range(5,8),arc:R.range(.35,.6)}));
     let t=0;
-    const n=Math.round((glance?10:6)+12*S);
+    const n=Math.round(((glance?10:6)+12*S)*(o.sparks??1));
     for(let i=0;i<n;i++){const back=!onSurface&&R.chance(.2),a=(back?A+Math.PI:B)+R.range(-1,1)*(glance?.3:onSurface?.85:.6),sp=R.range(260,900)*(.6+.4*S)*(glance?1.2:1);
       ps.spawn(PT.SPARK,X,Y,Math.cos(a)*sp,Math.sin(a)*sp-(glance?20:60),R.range(.1,.3)*(glance?1.3:1));}
     if(onSurface){const sc=o.surface,dc=mix(sc,rgb(150,140,150),.35);
@@ -30,14 +39,16 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
         ps.spawn(PT.CHIP,X,Y+ny*2,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.8,1.4),R.chance(.5)?scale(sc,1.25):R.chance(.5)?sc:scale(sc,.7),R.chance(.3)?2:1);}
       for(let i=0;i<Math.round(3+4*S);i++){const a=N+R.range(-1,1),sp=R.range(20,90)*S;ps.spawn(PT.DUST,X+nx*3,Y+ny*3,Math.cos(a)*sp,Math.sin(a)*sp,R.range(.35,.7),dc,R.range(1.4,2.8)*Math.sqrt(S));}
       ps.spawn(PT.SMOKE,X+nx*4,Y+ny*4,R.range(-8,8),R.range(-30,-14),R.range(.8,1.3),SMOKE,R.range(1.6,2.4)*Math.sqrt(S),.05);}
+    if(o.kick!==undefined){const g=o.kick,dc=mix(o.surface??SMOKE,rgb(150,140,150),.35);
+      for(let i=0;i<3;i++){const sd=(i-1)||R.sign(),sp=R.range(40,110)*S;ps.spawn(PT.DUST,X+sd*R.range(2,6),g-R.range(1,3),sd*sp+Math.cos(B)*30,-R.range(6,22),R.range(.3,.55),dc,R.range(1.2,2.2)*Math.sqrt(S),R.range(.02,.06));}}
     o.shake?.(.03*S);
-    const tx=Math.cos(B),ty=Math.sin(B),STREAK=.16,SPEED=1500;
+    const tx=Math.cos(B),ty=Math.sin(B),STREAK=.16,SPEED=1500,scorch=o.scorch??true,scT=scorch===true?1.1:+scorch||0,scK=scorch===true?.9:scT;
     const sx=Math.cos(N+Math.PI/2)*Math.sign(Math.cos(A-(N+Math.PI/2))||1),sy=Math.sin(N+Math.PI/2)*Math.sign(Math.cos(A-(N+Math.PI/2))||1);
     return{
       update(dt){t+=dt;ps.update(dt);},
       draw(fr,layer){const buf=new Px(fr,fr.color),light=new Px(fr,fr.light);
         if(layer!=='front'){
-          if(glance&&onSurface&&t<1.1){const T=clamp(1-t/.9),L=9*S;
+          if(glance&&onSurface&&t<scT){const T=clamp(1-t/scK),L=9*S;
             for(let d=0;d<=L;d+=.5){const k=d/L,px=ax-sx*d,py=ay-sy*d,c=T*(1-k)>.5?C[1]:T*(1-k)>.25?C[3]:T>0?C[5]:SOOT;dot(buf,px,py,c,1-k*.6);if(T>.2&&(d|0)%3===0)light.glow(px,py,4,C[3],.3*T*(1-k));}}
           ps.draw(buf,light,'back');}
         if(layer==='back')return;
@@ -52,7 +63,7 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
           light.glow(ax+tx*head,ay+ty*head,9,C[2],.6*(1-k));}
         ps.draw(buf,light,'front');
         const pop=Math.exp(-t/.05);if(pop>.02){light.glow(ax,ay,22*S+6,C[3],.9*pop);light.glow(ax,ay,8*S+2,C[0],.7*pop);}},
-      done:()=>t>(glance?1.1:.2)&&ps.list.length===0,
+      done:()=>t>(glance?Math.max(.2,scT):.2)&&ps.list.length===0,
       lamp:()=>{const pop=Math.exp(-t/.05);return pop>.05?{i:1.1*pop*S,c:[(C[3]&255)/255,((C[3]>>>8)&255)/255,((C[3]>>>16)&255)/255],r:120*S,h:0}:null;}};}
   function star(buf,ax,ay,spikes,S,sc,th,core,body,inner,rim){
     for(const pass of [0,1,2])for(const s of spikes){const c=Math.cos(s.a),sn=Math.sin(s.a),L=s.len*sc;
@@ -81,15 +92,30 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
           case PT.DUST:buf.alphaDisc(ax,ay,p.size*(.6+(1-k)*.9),p.col,Math.pow(k,1.3)*.7);break;
           case PT.SMOKE:{const age=1-k,r=p.size*(.65+Math.min(1,age*2.5)*.45+age*.4),a=Math.min(1,age*12)*Math.min(1,k*2.4)*.5,c=mix(p.col,ramp(SMOKE_RAMP,age),age);
             buf.alphaDisc(ax,ay,r,c,a*.45);buf.alphaDisc(ax+r*.05,ay+r*.06,r*.74,c,a*.62);break;}}}}}
-  /* Embervale wrapper. hit point h world units above the ground at (x, y); a = the blow's direction on the ground plane */
-  let seed=1;
-  function pxImpact(x,y,h,o={}){const a=o.a??0,ang=Math.atan2(Math.sin(a)*.45,Math.cos(a)),hp=Math.round(h/PIX);
-    return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:o.size??1,ramp:o.ramp,ground:c.y,seed:seed++,shake:PXK.shake}),{x,y,w:128,hh:Math.max(72,hp+44),ay:Math.max(72,hp+44)-16,pri:o.pri??1,lamp:o.lamp});}
-  const RAMPS={};const rampFor=c=>RAMPS[c]||(RAMPS[c]=PXK.rampOf(c));
+  /* Embervale wrapper. hit point h world units above the ground at (x, y); a = the blow's direction on the ground plane.
+     Every hit is SF's surface hit (normal up, like the reference): the blow reads in screen space as SF's glancing angle
+     (0.19 rad, ricochet 0.38) toward the side it travels, so the star stretches along the blow, the ring shows its open (upper) side,
+     sparks spray forward-up, and grey-violet chips (the surface: #4a3f69 tinted 20% by the creature) fall to the ground row,
+     with a dust kick at the feet for low hits and a smoke wisp. Size 0.62 (crit 0.85, bosses x1.15): about a third of the hero's height. */
+  let seed=1;const SURF=hex('#4a3f69');
+  function pxImpact(x,y,h,o={}){const a=o.a??0,c0=Math.cos(a),side=Math.abs(c0)>.15?Math.sign(c0):(P&&P.face<0?-1:1),glance=o.kind==='ricochet',
+      tilt=(glance?.38:.19)+(o.jit??0),ang=side>0?tilt:Math.PI-tilt,hp=Math.max(0,Math.round(h/PIX)),S=o.size??.62,
+      W=PERF.lite?128:144,HH=Math.max(60,hp+40),AX=side>0?44:W-44,low=hp<=20;
+    return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:S,ramp:o.ramp,ground:c.y,surface:o.surface??SURF,scorch:hp<4?true:.28,
+      sparks:PERF.lite?1:1.35,kick:low?c.y:undefined,seed:seed++,shake:PXK.shake}),{x,y,w:W,hh:HH,ax:AX,ay:HH-12,pri:o.pri??1,lamp:o.lamp});}
+  /* damage-colour ramps: SF-style rampOf, with the last step pushed to a deep cool shadow so the ramp ends dark */
+  const DEEP=hex('#1c1430'),RAMPS={},SURFS={};
+  /* the game's damage colours are pastel tints (#bfefff, #d8b8ff...): pull them to 2.2x saturation before ramping, icy blues use FROST, warm tints SF's WARM */
+  const rampFor=c=>RAMPS[c]||(RAMPS[c]=(()=>{const v=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)),mx=Math.max(...v);
+    if(v[2]>v[0]+30&&v[1]>v[0])return FROST;if(v[0]>v[2]+60)return WARM_RAMP;
+    const r=PXK.rampOf(v.map(q=>clamp((mx-(mx-q)*2.2)/255)));r[4]=mix(r[4],DEEP,.18);r[5]=mix(r[5],DEEP,.45);return r;})());
+  const FROST=['#ffffff','#e2f8ff','#9fe2ff','#56b2ea','#336cbc','#242f6e'].map(hex);
+  const surfFor=c=>!c?SURF:SURFS[c]||(SURFS[c]=mix(SURF,hex(c),.2));
   onEv('pxHit',(e,dmg,src,opt,crit)=>{if(opt.dot||src!==P||!P)return;const hh=(e.boss?60:32)*e.s+(e.d.fly||0),a=Math.atan2(e.y-P.y,e.x-P.x),
     col=opt.color&&opt.color!=='#ffffff'?opt.color:null,big=crit||opt.big;
-    pxImpact(e.x-Math.cos(a)*e.r*.5,e.y+2,hh,{a,size:(big?1.25:.85)*(e.boss?1.15:1),ramp:col?rampFor(col):undefined,kind:Math.random()<.18&&!big?'ricochet':'hit',lamp:big});});
-  pxlab('impact','Impact (hit)','Combat','sf',(x,y)=>pxImpact(x,y,34,{a:0,size:1,lamp:true}));
-  pxlab('impact-ice','Impact (frost ramp)','Combat','sf',(x,y)=>pxImpact(x,y,34,{a:Math.PI,size:1.2,ramp:rampFor('#7fd8ff')}));
+    pxImpact(e.x-Math.cos(a)*(e.r+12*e.s),e.y-Math.sin(a)*e.r*.4+6,hh,{a,size:(big?.85:.62)*(e.boss?1.15:1),ramp:col?rampFor(col):undefined,
+      surface:surfFor(e.d&&e.d.col),jit:Math.random()*.12-.06,kind:Math.random()<.18&&!big?'ricochet':'hit',lamp:big});});
+  pxlab('impact','Impact (hit)','Combat','sf',(x,y)=>pxImpact(x,y,30,{a:0,lamp:true}));
+  pxlab('impact-ice','Impact (frost ramp)','Combat','sf',(x,y)=>pxImpact(x,y,30,{a:.1,size:.7,ramp:FROST,surface:surfFor('#8fe6ff')}));
   pxlab('ricochet','Ricochet','Combat','sf',(x,y)=>pxImpact(x,y,30,{a:.3,kind:'ricochet'}));
   return{pxImpact};})();

@@ -14,7 +14,7 @@ const every=+arg('--every',2),max=+arg('--max',72),[cw,ch]=arg('--crop','360x240
   const pg=await b.newPage({viewport:{width:800,height:450}});const errs=[];
   pg.on('console',m=>{if(m.type()==='error'&&!/ERR_FAILED|fonts\.g/.test(m.text()))errs.push(m.text().slice(0,300));});pg.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
   await pg.route('**/fonts.g*/**',r=>r.abort());
-  await pg.addInitScript(()=>{const q=[];window.requestAnimationFrame=cb=>{q.push(cb);return q.length;};let T=1000;window.__step=(n,dt)=>{dt=dt||1000/60;for(let i=0;i<n;i++){T+=dt;const a=q.splice(0);for(const cb of a)cb(T);}};try{localStorage.setItem('embervale-q','2');}catch(e){}});
+  await pg.addInitScript(()=>{const q=[];window.requestAnimationFrame=cb=>{q.push(cb);return q.length;};let T=1000;window.__step=(n,dt)=>{dt=dt??1000/60;for(let i=0;i<n;i++){T+=dt;const a=q.splice(0);for(const cb of a)cb(T);}};try{localStorage.setItem('embervale-q','2');}catch(e){}});
   await pg.goto('file://'+path.resolve(html));
   await pg.waitForFunction(()=>window.__T&&!document.querySelector('#bNew').disabled,null,{timeout:180000,polling:200});
   await pg.evaluate(o=>__T.startGame(o.cls,o),{cls:'blademaster',lvl:25,rg:0,q:{i:3,p:0,stage:'active'},ash:false,pot:3});

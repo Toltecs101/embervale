@@ -16,7 +16,7 @@ execFileSync('node',[path.join(D,'assemble.cjs'),'--out',html,'--test',...(arg('
   const pg=await b.newPage({viewport:{width:800,height:450}});const errs=[];
   pg.on('console',m=>{if(m.type()==='error'&&!/ERR_FAILED|fonts\.g/.test(m.text()))errs.push(m.text().slice(0,500));});pg.on('pageerror',e=>errs.push('PAGEERROR '+String(e.stack||e.message).slice(0,800)));
   await pg.route('**/fonts.g*/**',r=>r.abort());
-  await pg.addInitScript(()=>{const q=[];window.requestAnimationFrame=cb=>{q.push(cb);return q.length;};let T=1000;window.__step=(n,dt)=>{dt=dt||1000/60;for(let i=0;i<n;i++){T+=dt;const a=q.splice(0);for(const cb of a)cb(T);}};try{localStorage.setItem('embervale-q','2');}catch(e){}});
+  await pg.addInitScript(()=>{const q=[];window.requestAnimationFrame=cb=>{q.push(cb);return q.length;};let T=1000;window.__step=(n,dt)=>{dt=dt??1000/60;for(let i=0;i<n;i++){T+=dt;const a=q.splice(0);for(const cb of a)cb(T);}};try{localStorage.setItem('embervale-q','2');}catch(e){}});
   await pg.goto('file://'+path.resolve(html));
   await pg.waitForFunction(()=>window.__T&&!document.querySelector('#bNew').disabled,null,{timeout:180000,polling:200});
   const E=src=>pg.evaluate(s=>__T.ev(s),src);
