@@ -34,7 +34,7 @@ const SUMMARY={impact:'A hit star with shards, a ring and sparks on every hit th
   levelup:'Original: level up: a golden rune circle, glyphs climbing the hero in a pillar of light, the new level number popping overhead.',
   wayfinder:'Original: small gold arrowheads on the ground along a walkable route to the next quest checkpoint (a navigation aid).'};
 for(const m of process.argv.slice(2)){const src=fs.readFileSync(path.join(D,'fx',m+'.js'),'utf8');
-  const labs=[...src.matchAll(/pxlab\('([^']+)','([^']+)'/g)].map(x=>({id:x[1],name:x[2]}));
+  const labs=[...src.matchAll(/pxlab\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]/g)].map(x=>({id:x[1],name:x[2]}));
   const out=path.join('runs','rate-'+m),frames=LONG.has(m)?'0,15,30,60,90,120':'0,2,4,8,14,22,34,50';
   const a=['shot.cjs','--out',out,'--fx',m,'--play',labs.map(l=>l.id).join(','),'--frames',frames];if(ZONE[m])a.push('--zone',ZONE[m]);
   let log='';try{log=execFileSync('node',a,{cwd:D,encoding:'utf8',timeout:1500000});}catch(e){log=String(e.stdout||'')+String(e.stderr||'');}
