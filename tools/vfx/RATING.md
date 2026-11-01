@@ -4,12 +4,11 @@ The rater sees only images and this rubric: no code, no history. It scores one m
 decimal, and lists what keeps it from a higher score. A module ships at 9.2 or more.
 
 ## What the rater gets (the manifest)
-`runs/<module>/manifest.json`:
+`runs/rate-<module>/manifest.json`:
 ```json
-{ "module": "ice", "summary": "one or two plain sentences: what the effects are and when they appear in the game",
-  "items": [ { "name": "Frost Nova", "game": ["runs/ice/ice-nova_sheet.png"], "ref": ["runs/ice/ref/ice-nova_sheet.png"],
-               "refKind": "sprite fusion source render | pixelfx render | style reference (closest Sprite Fusion effects)",
-               "notes": "what to look for, frame times, anything off-screen" } ] }
+{ "module": "ice", "summary": "what the effects are and when they appear in the game", "refKind": "what the reference sheets are",
+  "refs": ["runs/ref/ice/ice-nova_sheet.png", "..."],
+  "items": [ { "name": "Frost Nova", "lab": "ice-nova", "game": [".../runs/rate-ice/ice-nova_sheet.png"], "notes": "frames, where to look" } ] }
 ```
 `game` sheets are frame-exact captures inside Embervale (an HD-2D world: pixel sprites standing in a lit 3D diorama, about 43 px tall
 heroes, bloom). `ref` sheets are the reference: Sprite Fusion's own effect code rendered by `sfref.mjs` on a dark floor, or pixelfx's
