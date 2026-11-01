@@ -17,7 +17,7 @@
      'flat'  lies on the ground like a decal (art x -> world x, art y down -> world y, toward the camera)
    1 art pixel = PIX world units (2.5), the sprites' own grid. Inside an effect, positions are Sprite Fusion world units,
    PXW (2) per art pixel, so ported code keeps its numbers. The light buffer is drawn additively (it also feeds the bloom),
-   then the colour buffer alpha-blended over it. With split:true the 'back' layer is drawn just behind the anchor's depth and
+   then the colour buffer alpha-blended over it. With split:true the 'back' layer is drawn 22 units behind the anchor (the fx program biases depth 16 units toward the camera) and
    'front' just in front, so an effect can wrap a character.
 
    pxfx(make, o) -> handle | null. make(c) returns the effect; c = {x, y, w, h, PXW, actor} gives its anchor in effect units,
@@ -163,7 +163,7 @@ function pxfx_scene(now,b){PXFX.fr++;const L=PXFX.list,J=PXFX.jobs;J.length=0;PX
     const bufs=H.split?[H.L,H.c0,H.c1]:[H.L,H.c0];
     for(let k=H.nl?1:0;k<bufs.length;k++){const x=bx+k*(H.w+1);if(fresh){J.push(x,by,H.w,H.hh,bufs[k]);up+=H.w*H.hh*4;}
       const u0=x/PXTW,v0=by/PXT,u1=(x+H.w)/PXTW,v1=(by+H.hh)/PXT,isL=k===0,Lr=isL?DD:DA,a=H.a,ak=isL?1:1-H.amb,
-        r=isL?1:ak+H.amb*amb[0],g=isL?1:ak+H.amb*amb[1],bb=isL?1:ak+H.amb*amb[2],dz=!H.split?3:k===1?-3:3;
+        r=isL?1:ak+H.amb*amb[0],g=isL?1:ak+H.amb*amb[1],bb=isL?1:ak+H.amb*amb[2],dz=!H.split?3:k===1?-22:3;
       if(Lr.n>=Lr.cap)continue;Lr.vi=0;
       if(H.mode==='flat'){const X0=-H.ax*PIX,X1=(H.w-H.ax)*PIX,Y0=-H.ay*PIX,Y1=(H.hh-H.ay)*PIX,lift=1.2+k*.2;
         for(let q=0;q<4;q++){const kr=q===1||q===2,kb=q>1,vx=H.x+(kr?X1:X0),vz=H.y+(kb?Y1:Y0);vtx(Lr,vx,lift+hdEH(vx,vz),vz,kr?u1:u0,kb?v1:v0,r,g,bb,a);}}

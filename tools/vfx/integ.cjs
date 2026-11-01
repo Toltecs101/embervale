@@ -21,7 +21,7 @@ execFileSync('node',[path.join(D,'assemble.cjs'),'--out',html,'--test',...(arg('
   await pg.waitForFunction(()=>window.__T&&!document.querySelector('#bNew').disabled,null,{timeout:180000,polling:200});
   const E=src=>pg.evaluate(s=>__T.ev(s),src);
   await pg.evaluate(o=>__T.startGame(o.cls,o),{cls:arg('--cls','blademaster'),lvl:25,rg:0,q:{i:3,p:0,stage:'active'},ash:false,pot:3});
-  await E(`g5_skip=()=>false;showDialog=(d,next)=>{try{next&&next();}catch(e){}};cine=null;P.maxHp=P.hp=1e8;;timers=timers.filter(t=>!/showDaily|runNewGameFlow/.test(String(t.fn)));showDaily=()=>{};$('#daily').hidden=true;0`);
+  await E(`g5_skip=()=>false;showDialog=(d,next)=>{try{next&&next();}catch(e){}};cine=null;Object.defineProperty($('#daily'),'hidden',{get:()=>true,set(){}});P.maxHp=P.hp=1e8;;timers=timers.filter(t=>!/showDaily|runNewGameFlow/.test(String(t.fn)));showDaily=()=>{};$('#daily').hidden=true;0`);
   if(has('--lite'))await E(`PERF.lite=true;PERF.partMul=.5;0`);
   const shot=async f=>{const d=await pg.evaluate(()=>{__step(1);return __T.glc.toDataURL('image/jpeg',.8);});fs.writeFileSync(path.join(out,f),Buffer.from(d.split(',')[1],'base64'));};
   const stat=()=>pg.evaluate(()=>({live:__T.PXFX.list.length,ms:+__T.PXFX.ms.toFixed(3),drop:__T.PXFX.drop,up:__T.PXFX.up}));

@@ -36,7 +36,7 @@ const plays=(arg('--play','')||'').split(',').filter(Boolean),runs=arg('--run')?
         if(!n)throw new Error('zone empty');sx/=n;sy/=n;let best=null,bd=1e9;for(let i=0;i<MW*MH;i++){if(zoneMap[i]!==zi||solid[i])continue;const tx=i%MW,ty=i/MW|0;let ok=1;for(let dy=-2;dy<=2&&ok;dy++)for(let dx=-3;dx<=3;dx++)if(isSolid(tx+dx,ty+dy)){ok=0;break;}if(!ok)continue;const d=(tx-sx)**2+(ty-sy)**2;if(d<bd){bd=d;best=[tx,ty];}}
         x=(best[0]+.5)*T;y=(best[1]+.5)*T;}
       P.x=x;P.y=y;CAM.x=x;CAM.z=y;curZone=zoneMap[Math.floor(y/T)*MW+Math.floor(x/T)];if(!${JSON.stringify(keep)})for(const e of enemies)if(!e.boss&&!e.node&&Math.hypot(e.x-x,e.y-y)<900)e.dead=true;return [x,y];})()`),[at,zone,keep]);
-  await pg.evaluate(()=>__T.ev(`P.maxHp=P.hp=1e8;P.face=1;g5_skip=()=>false;showDialog=(d,next)=>{try{next&&next();}catch(e){}};cine=null;timers=timers.filter(t=>!/showDaily|runNewGameFlow/.test(String(t.fn)));showDaily=()=>{};$('#daily').hidden=true;`));
+  await pg.evaluate(()=>__T.ev(`P.maxHp=P.hp=1e8;P.face=1;g5_skip=()=>false;showDialog=(d,next)=>{try{next&&next();}catch(e){}};cine=null;Object.defineProperty($('#daily'),'hidden',{get:()=>true,set(){}});timers=timers.filter(t=>!/showDaily|runNewGameFlow/.test(String(t.fn)));showDaily=()=>{};$('#daily').hidden=true;`));
   const en=arg('--enemy');if(en){const [type,n]=en.split(':');await pg.evaluate(([type,n])=>__T.ev(`for(let k=0;k<${+n||1};k++){const e=mkEnemy('${type}',P.x+150+k*40,P.y+(k%2?30:-10),Math.max(1,P.lvl-2),null);e.state='idle';e.spawn=null;enemies.push(e);}`),[type,n]);}
   if(arg('--pre'))await pg.evaluate(src=>__T.ev(src),arg('--pre'));
   await pg.evaluate(n=>{__step(n);},warm);

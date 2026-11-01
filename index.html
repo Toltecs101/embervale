@@ -968,7 +968,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 /* ================= HOOKS: extension points the feature modules at the bottom of the script plug into ================= */
 const EVB={};function onEv(n,f){(EVB[n]||(EVB[n]=[])).push(f);}
-function emit(n,a,b,c,d){const L=EVB[n];if(!L)return;for(const f of L){try{f(a,b,c,d);}catch(err){console.error(err);}}}
+function emit(n,a,b,c,d,e){const L=EVB[n];if(!L)return;for(const f of L){try{f(a,b,c,d,e);}catch(err){console.error(err);}}}
 /* cost knobs set by the device/quality preset: partMul scales optional particle counts, lite skips optional per-frame cosmetics */
 const PERF={partMul:1,lite:false};
 /* HD-2D overhaul (PLAN.md): runtime feature flags set by the module blocks; HD_CH = sprite sheets that are characters */

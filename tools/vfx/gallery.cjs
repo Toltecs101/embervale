@@ -19,7 +19,7 @@ const every=+arg('--every',2),max=+arg('--max',72),[cw,ch]=arg('--crop','360x240
   await pg.waitForFunction(()=>window.__T&&!document.querySelector('#bNew').disabled,null,{timeout:180000,polling:200});
   await pg.evaluate(o=>__T.startGame(o.cls,o),{cls:'blademaster',lvl:25,rg:0,q:{i:3,p:0,stage:'active'},ash:false,pot:3});
   const E=src=>pg.evaluate(s=>__T.ev(s),src);
-  await E(`g5_skip=()=>false;showDialog=(d,next)=>{try{next&&next();}catch(e){}};cine=null;P.maxHp=P.hp=1e8;timers=timers.filter(t=>!/showDaily|runNewGameFlow/.test(String(t.fn)));showDaily=()=>{};$('#daily').hidden=true;0`);
+  await E(`g5_skip=()=>false;showDialog=(d,next)=>{try{next&&next();}catch(e){}};cine=null;Object.defineProperty($('#daily'),'hidden',{get:()=>true,set(){}});P.maxHp=P.hp=1e8;timers=timers.filter(t=>!/showDaily|runNewGameFlow/.test(String(t.fn)));showDaily=()=>{};$('#daily').hidden=true;0`);
   const goZone=id=>E(`(()=>{const zi=ZONES.findIndex(z=>z.id==='${id}');const rg=zi>=6&&zi<=11?1:0;if(curRegion!==rg){buildRegion(rg);resetWorld();}
       let sx=0,sy=0,n=0;for(let i=0;i<MW*MH;i++)if(zoneMap[i]===zi&&!solid[i]){sx+=i%MW;sy+=i/MW|0;n++;}sx/=n;sy/=n;let best=null,bd=1e9;
       for(let i=0;i<MW*MH;i++){if(zoneMap[i]!==zi||solid[i])continue;const tx=i%MW,ty=i/MW|0;let ok=1;for(let dy=-2;dy<=2&&ok;dy++)for(let dx=-3;dx<=3;dx++)if(isSolid(tx+dx,ty+dy)){ok=0;break;}if(!ok)continue;const d=(tx-sx)**2+(ty-sy)**2;if(d<bd){bd=d;best=[tx,ty];}}
