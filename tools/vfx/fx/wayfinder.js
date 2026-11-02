@@ -1,32 +1,32 @@
 /* WAYFINDER (original, in Sprite Fusion's style): a trail of small gold chevrons lying on the ground that leads to the next checkpoint along a
    walkable route (A* over the tile grid, recomputed twice a second), so "follow the arrow" never means walking into a wall or a river.
    It shows while the goal is more than 7 tiles away, outside combat, dialogs and cinematics, and only with the quest tracker switched on.
-   Recipe (per chevron, a 24 x 32 art px billboard standing on the route at ground height; pri 0, so the bridge redraws it every 2nd frame):
-   - Ground read: the chevron is drawn as the camera sees a shape lying on the ground (ground depth shrinks to SQ = 0.36 of its width on
-     screen, measured in game), standing at h = 0 with its lowest row on the anchor, so it never floats and never sinks into kerbs or steps
-     the way a deep flat decal does. A soft alpha contact smudge (17 x 6 px, 0.3) sits under its foot.
-   - Covered by a prop (the notice board, a lamp post; tested against the sprite's own pixels): it dithers to a ghost at 45 % (rim and
-     body, still flashing with the pulse) whose canvas steps just in front of the prop, raised 0.35 of the step (plus the terrain height
-     difference) so it stays on the same screen spot. The route reads straight through the prop.
-   - Placement: from 2.1 tiles ahead of the hero (clear of the sword and the fountain's water arc), one chevron every tile of a
-     screen-like metric (depth counted at 0.5), so gaps stay about 1-1.5 chevron widths whichever way the route runs; up to 13 (8 in
-     lite mode), along the Chaikin-smoothed route; each points along the local tangent (averaged over +-0.7 tiles), snapped to 8 ways.
-   - Shape: one design, a compact ">" 9 px tall and 7 px long, arms 3 px thick (4 px by the tip) with a V-notched tail; diagonals are a
-     7 x 7 corner, arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it, a cream
-     highlight pixel behind the tip. Top-lit: open space above -> one step lighter, open space below -> one step darker, the spine one
-     step lighter. Every chevron keeps this full material at any distance; only the last two thin their body by dither (rim kept).
-   - Pulse: every 2 s a wave runs out from the hero, 0.15 s per chevron (+-0.03 s jitter): heat rises in 0.05 s, holds 0.15 s, falls over
-     0.25 s. The body goes from step 3 (muted / old gold) to step 0 (warm white / cream), Bayer-dithered between steps on the way back
-     (the afterglow behind the wave); the chevron grows 1 px (arms to |j| 5) and lifts 1 px while the wave is on it. At rest each bobs
-     1 px on its own phase (sin(3.1 t + 1.9 k) > .55); rest brightness varies +-0.05 per chevron.
-   - Ground glow: a stepped pool round its foot in the colour layer (a denser dithered core, a sparse dithered rim, cream / pale yellow
-     on the wave, muted / old gold at rest), then the light buffer: a 12 x 4.5 px warm pool (0.14 + 0.24 h, #c08840), a soft
-     warm-white bloom core on every chevron (7 x 6 px, 0.16 + 0.5 h) and an 11 x 10 px halo on the wave (0.5 h^1.5).
-   - Sparkles: two four-point plus glints per chevron, each on its own period (1.3-2.1 s) and phase, lit 0.25 s at a new spot each
-     cycle (white core, cream arms, pale cyan tips while large, a 4 px glow); on the wave one jumps to the tip, a pale cyan sparkle
-     pixel blinks behind it and 3 motes of 1 px rise 15 px over 0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
-   - Palette: R0 #fffbea warm white, R1 #fff0c2 cream, R2 #f5dc90 pale yellow, R3 #d9b05c muted gold, R4 #a97c34 old gold,
-     R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (sparkle tips and the sparkle pixel only).
+   Recipe (per chevron; pri 0, so the bridge redraws it every 2nd frame):
+   - Ground read: a 24 x 32 px billboard standing at h = 0 with the chevron's foot on the anchor, the chevron drawn as the camera sees a
+     shape lying on the ground: squashed to 0.62 vertically, ~7 px wide and ~5 px tall on screen plus its rim (never floats, never sinks
+     into kerbs the way a deep flat decal does). A soft alpha contact smudge under it.
+   - Covered by a nearer prop (the notice board, a lamp post; tested against the sprite's own pixels): the whole chevron, sparkles
+     included, dithers out in 0.1 s and comes back past it. The trail also stops where the ground steps more than 10 units between
+     two chevrons (walls, banks), the last two thinning their body by dither.
+   - Placement: from 2.5 tiles ahead of the hero (clear of the sword and the fountain's water arc), one every tile of a screen-like
+     metric (depth counted at 0.5), so gaps stay about 1-1.5 chevron widths whichever way the route runs; up to 13 (8 in lite mode),
+     along the Chaikin-smoothed route.
+   - Shape and turn: a ">" chevron, tip 4 px ahead, wings 5 px out, front edges 1.3 back per px out, the V notch cut to 0.2 px ahead
+     of the centre (arms ~2 px). It turns with the route as the camera sees it (depth weighted 0.6): within 40 degrees of level a ">" or
+     "<" sheared up to 0.12 px per px so it climbs or dips with the route, steeper a "^" or "v" sheared up to 0.47; shearing keeps both
+     arms whole at this size. 1 px dark amber rim, a darker contact row, a pale cream highlight on the tip; top-lit (open space above ->
+     one step lighter, below -> one step darker). Size 0.95-1.05 per chevron, rest brightness +-0.06, its own 1 px bob phase.
+   - Pulse: every 1.6 s a wave runs out from the hero, 0.15 s per chevron (+-0.05 s jitter): heat rises in 0.04 s, holds 0.08 s, falls
+     over 0.45 s, read in steps so the wave is always visible as a staircase: leader pale cream (+1 px size, 1 px lift, tip glint),
+     then light gold, gold, rest (muted / old gold).
+   - Ground glow: a stepped dithered pool round it in the colour layer (cream / pale yellow under the wave, muted / old gold at rest),
+     then the light buffer: a warm pool (12 x 4 px, 0.12 + 0.22 h, #c08840), a soft warm halo on every chevron (8 x 5 px,
+     0.14 + 0.45 h) and a bigger cream bloom on the wave (12 x 8 px, 0.45 h^2).
+   - Glints and motes: the wave leader carries a 4-spike cross glint on its tip (2 px arms with pale cyan ends for 0.1 s, then 1 px);
+     after the wave each chevron lets 1-3 tiny cross motes drift up 14 px over 0.85 s (a plus while young, then 1 px; pale cream ->
+     cream -> pale yellow, dither out), now and then (12 %) a cyan-white one.
+   - Palette: R0 #fff3d6 pale cream, R1 #ffe7b4 cream, R2 #f2d58a pale yellow, R3 #d8ac58 muted gold, R4 #a77a33 old gold,
+     R5 #5e3c18 dark amber rim, R6 #2e1c0c contact shadow; accent #d4f4ff (glint arm ends and rare motes only).
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
 const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   const R=['#fff3d6','#ffe7b4','#f2d58a','#d8ac58','#a77a33','#5e3c18','#2e1c0c'].map(hex),CYAN=hex('#d4f4ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
@@ -90,17 +90,17 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
         const hole=k>=n-2?(k-(n-3))*.22:0,hot=h>.85,lvl=h>.85?0:h>.55?1:h>.25?2:3,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
         /* the shape is laid on the ground: a chevron (tip 4 px ahead, wings 5 px out, front edges 1.3 back per px out, the V notch
            cut to 0.2 px ahead of the centre, 0.85 back per px out, so the arms are ~2 px) squashed to VS = 0.62 vertically. It turns with the route as the camera sees it (depth weighted 0.6):
-           within 40 degrees of level it is a ">" / "<" sheared up to 0.2 px per px so it climbs or dips with the route; steeper, a
+           within 40 degrees of level it is a ">" / "<" sheared up to 0.12 px per px so it climbs or dips with the route; steeper, a
            "^" / "v" sheared up to 0.47 px per px. Shearing (not rotating) keeps both arms whole at this size. Scaled 0.95-1.05 per
            chevron, x1.13 on the wave */
         const fa=Math.atan2(Math.sin(c.a)*.6,Math.cos(c.a)),fc=Math.cos(fa),fs=Math.sin(fa),hz=Math.abs(fa)<.7||Math.abs(fa)>Math.PI-.7,S=sc*(hot?1.13:1),
-          sg=hz?Math.sign(fc):Math.sign(fs),tq=hz?Math.max(-.2,Math.min(.2,fs/Math.abs(fc))):Math.max(-.47,Math.min(.47,fc/Math.abs(fs)));
+          sg=hz?Math.sign(fc):Math.sign(fs),tq=hz?Math.max(-.12,Math.min(.12,fs/Math.abs(fc))):Math.max(-.47,Math.min(.47,fc/Math.abs(fs)));
         const inD=(u,v)=>{v=Math.abs(v);return v<=5&&u<=4-1.3*v&&u>=.2-.85*v?(v<.9?2:1):0;};
         M.fill(0);let tu=-9,tx=CX,ty=cy;for(let Y=cy-6;Y<=cy+6;Y++)for(let x=CX-8;x<=CX+8;x++){const px=(x+.5-CX)/S,py=(Y+.5-cy)/S;
           const u=hz?px*sg:py*sg/VS*.85,v=hz?(py-px*sg*tq)/VS:px-py*sg*tq/VS,on=inD(u,v);if(on){M[Y*CW+x]=on;if(u>tu){tu=u;tx=x;ty=Y;}}}
         /* stepped warm ground glow round it, drawn first: a denser dithered core and a sparse dithered rim; a soft contact smudge */
         for(let Y=cy-3;Y<=cy+4;Y++)for(let x=CX-9;x<=CX+9;x++){const ex=(x+.5-CX)/9,ey=(Y+.5-cy-.5)/3.6,e=ex*ex+ey*ey;if(e>=1)continue;
-          if(e<.4&&Y>cy)buf.blend(x,Y,R[6],.22*(1-e)*a);if(e<.35)put(buf,x,Y,lvl<2?R[1]:R[3],(.2+.35*h)*a);else if(e>.62)put(buf,x,Y,lvl<2?R[2]:R[4],(.1+.25*h)*a);}
+          if(e<.4&&Y>cy)buf.blend(x,Y,R[6],.22*(1-e)*a);if(e<.35)put(buf,x,Y,lvl<2?R[1]:R[3],(.12+.3*h)*a);else if(e>.62)put(buf,x,Y,lvl<2?R[2]:R[4],(.06+.18*h)*a);}
         /* body: stepped ramp (wave leader cream > light gold > gold > rest), top-lit; 1 px dark amber rim; a darker contact row */
         const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0;
         for(let Y=cy-7;Y<=cy+8;Y++)for(let x=CX-9;x<=CX+9;x++){
