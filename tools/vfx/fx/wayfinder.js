@@ -4,27 +4,29 @@
    Recipe (per chevron, a 24 x 32 art px billboard standing on the route at ground height; pri 0, so the bridge redraws it every 2nd frame):
    - Ground read: the chevron is drawn as the camera sees a shape lying on the ground (ground depth shrinks to SQ = 0.36 of its width on
      screen, measured in game), standing at h = 0 with its lowest row on the anchor, so it never floats and never sinks into kerbs or steps
-     the way a deep flat decal does. Sprites write no depth, so a chevron that a nearer prop or character covers on screen (the notice board,
-     a lamp post) dithers out over 0.15 s instead of showing through it.
-   - Placement: from 1.6 tiles ahead of the hero, one chevron every 1.75 tiles (~1.5 hero widths) along the route (Chaikin-smoothed),
-     up to 7 (6 in lite mode); each points along the route as the camera sees it, snapped to 8 ways (direction averaged over +-0.7 tiles).
+     the way a deep flat decal does. A soft alpha contact smudge (17 x 6 px, 0.3) sits under its foot.
+   - Covered by a prop (the notice board, a lamp post; tested against the sprite's own pixels): it dithers to a ghost at 45 % (rim and
+     body, still flashing with the pulse) whose canvas steps just in front of the prop, raised 0.35 of the step (plus the terrain height
+     difference) so it stays on the same screen spot. The route reads straight through the prop.
+   - Placement: from 2.1 tiles ahead of the hero (clear of the sword and the fountain's water arc), one chevron every tile of a
+     screen-like metric (depth counted at 0.5), so gaps stay about 1-1.5 chevron widths whichever way the route runs; up to 13 (8 in
+     lite mode), along the Chaikin-smoothed route; each points along the local tangent (averaged over +-0.7 tiles), snapped to 8 ways.
    - Shape: one design, a compact ">" 9 px tall and 7 px long, arms 3 px thick (4 px by the tip) with a V-notched tail; diagonals are a
-     7 x 7 corner, arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it. Top-lit:
-     open space above -> one step lighter, open space below -> one step darker, the spine one step lighter.
-   - Distance (from the 3rd chevron on): the rim always stays; up to 40 % of body pixels dither to holes, the shape loses 1 px of arm past
-     the 5th, and far rims go one step darker (#2e1c0c) while their top edge goes one step brighter, so they hold on grass and cobbles.
-   - Pulse: every 1.8 s a pulse runs out from the hero, 0.16 s per chevron (+-0.03 s jitter): heat rises in 0.05 s, holds 0.22 s (the
-     body is the warm-white / cream core for 2-3 frames at 0.1 s steps), then falls back to gold over 0.3 s; the body step is
-     3.2 - 3.2h through the ramp, Bayer-dithered between neighbouring steps. Rest brightness varies +-0.05 per chevron. The pulsing one
-     lifts 1 px; at rest each bobs 1 px on its own phase (sin(3.1 t + 1.9 k) > .55).
-   - Ground glow: under each, a 17 x 6 px stepped pool round its foot drawn in the colour layer (a denser dithered core in pale yellow /
-     muted gold, a sparse dithered rim in muted / old gold, both brighter while pulsing), then the light buffer: a 12 x 4.5 px warm
-     pool (0.12 + 0.2 h, #c08840) and a 10 x 9 px bloom halo (0.8 h^1.5, #f0c060) round the pulsing one.
-   - Glints on the pulsing chevron: a white plus on its tip (2 px arms for 0.12 s, then 1 px) with a 5 px glow, a second small plus
-     twinkling beside it (a new spot every 0.1 s, 0.2 s), and one pale cyan sparkle pixel behind it; 3 motes of 1 px rise 15 px over
-     0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
+     7 x 7 corner, arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it, a cream
+     highlight pixel behind the tip. Top-lit: open space above -> one step lighter, open space below -> one step darker, the spine one
+     step lighter. Every chevron keeps this full material at any distance; only the last two thin their body by dither (rim kept).
+   - Pulse: every 2 s a wave runs out from the hero, 0.15 s per chevron (+-0.03 s jitter): heat rises in 0.05 s, holds 0.15 s, falls over
+     0.25 s. The body goes from step 3 (muted / old gold) to step 0 (warm white / cream), Bayer-dithered between steps on the way back
+     (the afterglow behind the wave); the chevron grows 1 px (arms to |j| 5) and lifts 1 px while the wave is on it. At rest each bobs
+     1 px on its own phase (sin(3.1 t + 1.9 k) > .55); rest brightness varies +-0.05 per chevron.
+   - Ground glow: a stepped pool round its foot in the colour layer (a denser dithered core, a sparse dithered rim, cream / pale yellow
+     on the wave, muted / old gold at rest), then the light buffer: a 12 x 4.5 px warm pool (0.14 + 0.24 h, #c08840), a soft
+     warm-white bloom core on every chevron (7 x 6 px, 0.16 + 0.5 h) and an 11 x 10 px halo on the wave (0.5 h^1.5).
+   - Sparkles: two four-point plus glints per chevron, each on its own period (1.3-2.1 s) and phase, lit 0.25 s at a new spot each
+     cycle (white core, cream arms, pale cyan tips while large, a 4 px glow); on the wave one jumps to the tip, a pale cyan sparkle
+     pixel blinks behind it and 3 motes of 1 px rise 15 px over 0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
    - Palette: R0 #fffbea warm white, R1 #fff0c2 cream, R2 #f5dc90 pale yellow, R3 #d9b05c muted gold, R4 #a97c34 old gold,
-     R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (the sparkle pixel only).
+     R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (sparkle tips and the sparkle pixel only).
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
 const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   const R=['#fffbea','#fff0c2','#f5dc90','#d9b05c','#a97c34','#64401a','#2e1c0c'].map(hex),CYAN=hex('#c8f0ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
