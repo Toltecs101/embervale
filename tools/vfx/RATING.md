@@ -1,7 +1,7 @@
 # How a pixel VFX module is rated
 
 The rater sees only images and this rubric: no code, no history. It scores one module (one or more effects) from 0 to 10, to one
-decimal, and lists what keeps it from a higher score. A module ships at 9.2 or more.
+decimal, and lists what keeps it from a higher score. A module ships at 8.5 or more (the score Sprite Fusion's own unmodified code gets inside the game's bright scene).
 
 ## What the rater gets (the manifest)
 `runs/rate-<module>/manifest.json`:
@@ -27,7 +27,7 @@ renderer, or, for an original effect, the closest Sprite Fusion effects as a sty
 5. **Restraint and efficiency (10%)**: canvas no bigger than needed, nothing clipped at a canvas edge, no visual clutter, sensible
    lifetimes.
 
-Scoring guide: 9.5+ indistinguishable from a polished shipped game; 9.2 ship quality; 8.5 good but visible flaws; 7.5 clearly
+Scoring guide: 9.5+ indistinguishable from a polished shipped game; 8.5 ship quality (a faithful port of a polished reference in this scene); 8.0 good but visible flaws; 7.5 clearly
 unfinished; below 7 wrong or broken. Be strict: most first passes land between 7 and 8.8.
 
 ## What the rater returns

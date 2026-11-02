@@ -162,7 +162,7 @@ Sprite Fusion method and code): 244 pixel effects on the *same* frame layout (co
 - You may combine a pixelfx effect with your own SF-style code in the same module. Credit lines are added by the build.
 
 ## Quality bar, references and the rating loop (read RATING.md)
-Every module is rated by a reviewer that sees only images and `RATING.md`; it ships at **9.2/10 or more**. The owner's rules:
+Every module is rated by a reviewer that sees only images and `RATING.md`; it ships at **8.5/10 or more**. The owner's rules:
 match the references as closely as possible (composition, scale, materials and especially colours), cinematic and natural, not
 oversaturated, not grey or washed out; detail everywhere, nothing copy-pasted or simple, reads as detailed even from far away;
 efficient (the owner's GPU is weak: small canvases, `every` for ambient loops, `nolight` where there is no glow, caps).
