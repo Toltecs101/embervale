@@ -1,36 +1,36 @@
 /* WAYFINDER (original, in Sprite Fusion's style): a trail of small gold chevrons lying on the ground that leads to the next checkpoint along a
    walkable route (A* over the tile grid, recomputed twice a second), so "follow the arrow" never means walking into a wall or a river.
    It shows while the goal is more than 7 tiles away, outside combat, dialogs and cinematics, and only with the quest tracker switched on.
-   Recipe (per chevron; pri 0, so the bridge redraws it every 2nd frame):
-   - Ground read: a 24 x 32 px billboard standing at h = 0 with the chevron's foot on the anchor, the chevron drawn as the camera sees a
-     shape lying on the ground: squashed to 0.62 vertically, ~7 px wide and ~5 px tall on screen plus its rim (never floats, never sinks
-     into kerbs the way a deep flat decal does). A soft alpha contact smudge under it.
-   - Covered by a nearer prop (the notice board, a lamp post; tested against the sprite's own pixels): the whole chevron, sparkles
-     included, dithers out in 0.1 s and comes back past it. The trail also stops where the ground steps more than 10 units between
-     two chevrons (walls, banks), the last two thinning their body by dither.
-   - Placement: from 2.5 tiles ahead of the hero (clear of the sword and the fountain's water arc), one every tile of a screen-like
-     metric (depth counted at 0.5), so gaps stay about 1-1.5 chevron widths whichever way the route runs; up to 13 (8 in lite mode),
-     along the Chaikin-smoothed route.
-   - Shape and turn: a ">" chevron, tip 4 px ahead, wings 5 px out, front edges 1.3 back per px out, the V notch cut to 0.2 px ahead
-     of the centre (arms ~2 px). It turns with the route as the camera sees it (depth weighted 0.6): within 40 degrees of level a ">" or
-     "<" sheared up to 0.12 px per px so it climbs or dips with the route, steeper a "^" or "v" sheared up to 0.47; shearing keeps both
-     arms whole at this size. 1 px dark amber rim, a darker contact row, a pale cream highlight on the tip; top-lit (open space above ->
-     one step lighter, below -> one step darker). Size 0.95-1.05 per chevron, rest brightness +-0.06, its own 1 px bob phase.
-   - Pulse: every 1.6 s a wave runs out from the hero, 0.15 s per chevron (+-0.05 s jitter): heat rises in 0.04 s, holds 0.08 s, falls
-     over 0.45 s, read in steps so the wave is always visible as a staircase: leader pale cream (+1 px size, 1 px lift, tip glint),
-     then light gold, gold, rest (muted / old gold).
-   - Ground glow: a stepped dithered pool round it in the colour layer (cream / pale yellow under the wave, muted / old gold at rest),
-     then the light buffer: a warm pool (12 x 4 px, 0.12 + 0.22 h, #c08840), a soft warm halo on every chevron (8 x 5 px,
-     0.14 + 0.45 h) and a bigger cream bloom on the wave (12 x 8 px, 0.45 h^2).
-   - Glints and motes: the wave leader carries a 4-spike cross glint on its tip (2 px arms with pale cyan ends for 0.1 s, then 1 px);
-     after the wave each chevron lets 1-3 tiny cross motes drift up 14 px over 0.85 s (a plus while young, then 1 px; pale cream ->
-     cream -> pale yellow, dither out), now and then (12 %) a cyan-white one.
-   - Palette: R0 #fff3d6 pale cream, R1 #ffe7b4 cream, R2 #f2d58a pale yellow, R3 #d8ac58 muted gold, R4 #a77a33 old gold,
-     R5 #5e3c18 dark amber rim, R6 #2e1c0c contact shadow; accent #d4f4ff (glint arm ends and rare motes only).
+   Recipe (per chevron, a 24 x 32 art px billboard standing on the route at ground height; pri 0, so the bridge redraws it every 2nd frame):
+   - Ground read: the chevron is drawn as the camera sees a shape lying on the ground (ground depth shrinks to SQ = 0.36 of its width on
+     screen, measured in game), standing at h = 0 with its lowest row on the anchor, so it never floats and never sinks into kerbs or steps
+     the way a deep flat decal does. A soft alpha contact smudge (17 x 6 px, 0.3) sits under its foot.
+   - Covered by a prop (the notice board, a lamp post; tested against the sprite's own pixels): it dithers to a ghost at 45 % (rim and
+     body, still flashing with the pulse) whose canvas steps just in front of the prop, raised 0.35 of the step (plus the terrain height
+     difference) so it stays on the same screen spot. The route reads straight through the prop.
+   - Placement: from 2.1 tiles ahead of the hero (clear of the sword and the fountain's water arc), one chevron every tile of a
+     screen-like metric (depth counted at 0.5), so gaps stay about 1-1.5 chevron widths whichever way the route runs; up to 13 (8 in
+     lite mode), along the Chaikin-smoothed route; each points along the local tangent (averaged over +-0.7 tiles), snapped to 8 ways.
+   - Shape: one design, a compact ">" 9 px tall and 7 px long, arms 3 px thick (4 px by the tip) with a V-notched tail; diagonals are a
+     7 x 7 corner, arms 2 px, the inside filled to a V notch. Closed 1 px dark amber rim, a 1 px darker contact row under it, a cream
+     highlight pixel behind the tip. Top-lit: open space above -> one step lighter, open space below -> one step darker, the spine one
+     step lighter. Every chevron keeps this full material at any distance; only the last two thin their body by dither (rim kept).
+   - Pulse: every 2 s a wave runs out from the hero, 0.15 s per chevron (+-0.03 s jitter): heat rises in 0.05 s, holds 0.15 s, falls over
+     0.25 s. The body goes from step 3 (muted / old gold) to step 0 (warm white / cream), Bayer-dithered between steps on the way back
+     (the afterglow behind the wave); the chevron grows 1 px (arms to |j| 5) and lifts 1 px while the wave is on it. At rest each bobs
+     1 px on its own phase (sin(3.1 t + 1.9 k) > .55); rest brightness varies +-0.05 per chevron.
+   - Ground glow: a stepped pool round its foot in the colour layer (a denser dithered core, a sparse dithered rim, cream / pale yellow
+     on the wave, muted / old gold at rest), then the light buffer: a 12 x 4.5 px warm pool (0.14 + 0.24 h, #c08840), a soft
+     warm-white bloom core on every chevron (7 x 6 px, 0.16 + 0.5 h) and an 11 x 10 px halo on the wave (0.5 h^1.5).
+   - Sparkles: two four-point plus glints per chevron, each on its own period (1.3-2.1 s) and phase, lit 0.25 s at a new spot each
+     cycle (white core, cream arms, pale cyan tips while large, a 4 px glow); on the wave one jumps to the tip, a pale cyan sparkle
+     pixel blinks behind it and 3 motes of 1 px rise 15 px over 0.9 s with a 1 px sway (warm white -> cream -> pale yellow, dither out).
+   - Palette: R0 #fffbea warm white, R1 #fff0c2 cream, R2 #f5dc90 pale yellow, R3 #d9b05c muted gold, R4 #a97c34 old gold,
+     R5 #64401a dark amber rim, R6 #2e1c0c drop shadow; accent #c8f0ff (sparkle tips and the sparkle pixel only).
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
 const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
-  const R=['#fff3d6','#ffe7b4','#f2d58a','#d8ac58','#a77a33','#5e3c18','#2e1c0c'].map(hex),CYAN=hex('#d4f4ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
-  const NMAX=13,STEP=1,FIRST=2.5,MY=.5,LOOP=1.6,STAG=.15,VS=.62,CW=24,LH=32,CX=12,CY=21;
+  const R=['#fffbea','#fff0c2','#f5dc90','#d9b05c','#a97c34','#64401a','#2e1c0c'].map(hex),CYAN=hex('#c8f0ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
+  const ELO=[0,-1,-2,-3,-3,-4],EHI=[3,2,0,-1,-2,-3],NMAX=13,STEP=1,FIRST=2.1,MY=.5,LOOP=2,STAG=.15,SQ=.36,CW=24,LH=32,CX=12,CY=21;
   /* ---------- A* on the tile grid (8 neighbours, no corner cutting); props cost extra so the route keeps to open ground ---------- */
   const NN=MW*MH,GC=new Float32Array(NN),FR=new Int32Array(NN),ST=new Uint32Array(NN),CL=new Uint32Array(NN),HP=new Int32Array(NN),HF=new Float32Array(NN);
   let stamp=0,hn=0;
@@ -61,8 +61,8 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   /* ---------- the shared trail state: heat per chevron, computed once per update ---------- */
   const st={pts:[],t:0,on:false,goal:null,rt:null,re:0,last:'',h:new Float32Array(NMAX),dd:new Float32Array(NMAX),oc:new Float32Array(NMAX),occ:new Uint8Array(NMAX),oy:new Float32Array(NMAX),m:new Uint8Array(CW*LH)};
   function heat(dt){st.t+=dt;const tp=st.t%LOOP;
-    for(let k=0;k<NMAX;k++){let d=tp-k*STAG-(hash(k,3)-.5)*.1;d=((d+.3)%LOOP+LOOP)%LOOP-.3;st.dd[k]=d;
-      st.h[k]=d<-.04?0:d<0?1+d/.04:d<.08?1:Math.max(0,1-(d-.08)/.45);}}
+    for(let k=0;k<NMAX;k++){let d=tp-k*STAG-(hash(k,3)-.5)*.06;d=((d+.3)%LOOP+LOOP)%LOOP-.3;st.dd[k]=d;
+      st.h[k]=d<-.05?0:d<0?1+d/.05:d<.15?1:Math.max(0,1-(d-.15)/.25);}}
   /* sprites (props, the notice board, characters) do not write depth, so a ground decal behind one would show through it: find the
      chevrons a nearer sprite covers on screen and dither them out (st.oc eases to 1 over .15 s) */
   function occlude(dt){const n=st.pts.length,O=st.occ;O.fill(0);if(!n)return;const S=[],AD=ATL.data,AW=ATL.w;
@@ -76,50 +76,58 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
         for(let y=Math.max(0,Math.floor(row-rh));y<=Math.min(f.h-1,row+rh)&&!hit;y++)for(let x=Math.max(0,Math.floor(col-cw));x<=Math.min(f.w-1,col+cw);x++){
           const sx=s.flip?f.w-1-x:x;if(AD[(f.y+y)*AW+f.x+sx]){hit=1;break;}}
         if(hit){O[k]=1;st.oy[k]=s.y;}}}
-    for(let k=0;k<NMAX;k++)st.oc[k]=O[k]?Math.min(1,st.oc[k]+dt/.1):Math.max(0,st.oc[k]-dt/.1);}
+    for(let k=0;k<NMAX;k++)st.oc[k]=O[k]?Math.min(1,st.oc[k]+dt/.15):Math.max(0,st.oc[k]-dt/.15);}
   /* ---------- one chevron (Sprite Fusion shape: update / draw / done / stop), a flat decal on the route ---------- */
-  function chevron(k){let stop=false,fade=0;const base=.04+(hash(k,7)-.5)*.12,sc=.95+hash(k,19)*.1;
+  function chevron(k){let stop=false,fade=0;const base=.05+(hash(k,7)-.5)*.1;
     const put=(buf,x,Y,c,a)=>{if(x<0||Y<0||x>=CW||Y>=LH)return;if(a<1&&a<=bayer(x,Y))return;buf.data[Y*CW+x]=c;};
     /* an elliptic glow (falloff (1 - d)^2 * k) in the light buffer */
     const eglow=(L,cx,cy,rx,ry,c,k)=>{if(k<=.01)return;for(let y=Math.max(0,Math.floor(cy-ry));y<Math.min(LH,cy+ry);y++){const ey=(y+.5-cy)/ry;
       for(let x=Math.max(0,Math.floor(cx-rx));x<Math.min(CW,cx+rx);x++){const ex=(x+.5-cx)/rx,d=ex*ex+ey*ey;if(d>=1)continue;const f=1-Math.sqrt(d);L.add(x,y,c,f*f*k);}}};
     return{update(dt){fade=stop?Math.max(0,fade-dt/.3):Math.min(1,fade+dt/.4);},
       draw(fr){const c=st.pts[k];if(!c||fade<=0)return;const buf=new Px(fr,fr.color),light=new Px(fr,fr.light),M=st.m;
-        /* a nearer prop covering it (oc) dithers it out fast and whole, sparkles included; the last two thin their body (rim kept) */
-        const n=st.pts.length,a=fade*(1-st.oc[k]);if(a<=.02)return;const h=Math.min(1,st.h[k]+base),dd=st.dd[k];
-        const hole=k>=n-2?(k-(n-3))*.22:0,hot=h>.85,lvl=h>.85?0:h>.55?1:h>.25?2:3,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
-        /* the shape is laid on the ground: a chevron (tip 4 px ahead, wings 5 px out, front edges 1.3 back per px out, the V notch
-           cut to 0.2 px ahead of the centre, 0.85 back per px out, so the arms are ~2 px) squashed to VS = 0.62 vertically. It turns with the route as the camera sees it (depth weighted 0.6):
-           within 40 degrees of level it is a ">" / "<" sheared up to 0.12 px per px so it climbs or dips with the route; steeper, a
-           "^" / "v" sheared up to 0.47 px per px. Shearing (not rotating) keeps both arms whole at this size. Scaled 0.95-1.05 per
-           chevron, x1.13 on the wave */
-        const fa=Math.atan2(Math.sin(c.a)*.6,Math.cos(c.a)),fc=Math.cos(fa),fs=Math.sin(fa),hz=Math.abs(fa)<.7||Math.abs(fa)>Math.PI-.7,S=sc*(hot?1.13:1),
-          sg=hz?Math.sign(fc):Math.sign(fs),tq=hz?Math.max(-.12,Math.min(.12,fs/Math.abs(fc))):Math.max(-.47,Math.min(.47,fc/Math.abs(fs)));
-        const inD=(u,v)=>{v=Math.abs(v);return v<=5&&u<=4-1.3*v&&u>=.2-.85*v?(v<.9?2:1):0;};
-        M.fill(0);let tu=-9,tx=CX,ty=cy;for(let Y=cy-6;Y<=cy+6;Y++)for(let x=CX-8;x<=CX+8;x++){const px=(x+.5-CX)/S,py=(Y+.5-cy)/S;
-          const u=hz?px*sg:py*sg/VS*.85,v=hz?(py-px*sg*tq)/VS:px-py*sg*tq/VS,on=inD(u,v);if(on){M[Y*CW+x]=on;if(u>tu){tu=u;tx=x;ty=Y;}}}
-        /* stepped warm ground glow round it, drawn first: a denser dithered core and a sparse dithered rim; a soft contact smudge */
-        for(let Y=cy-3;Y<=cy+4;Y++)for(let x=CX-9;x<=CX+9;x++){const ex=(x+.5-CX)/9,ey=(Y+.5-cy-.5)/3.6,e=ex*ex+ey*ey;if(e>=1)continue;
-          if(e<.4&&Y>cy)buf.blend(x,Y,R[6],.22*(1-e)*a);if(e<.35)put(buf,x,Y,lvl<2?R[1]:R[3],(.12+.3*h)*a);else if(e>.62)put(buf,x,Y,lvl<2?R[2]:R[4],(.06+.18*h)*a);}
-        /* body: stepped ramp (wave leader cream > light gold > gold > rest), top-lit; 1 px dark amber rim; a darker contact row */
-        const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0;
-        for(let Y=cy-7;Y<=cy+8;Y++)for(let x=CX-9;x<=CX+9;x++){
-          if(m(x,Y)){const edge=!m(x,Y-1),sp=M[Y*CW+x]===2;let i=lvl+1;if(edge||sp)i--;else if(!m(x,Y+1))i++;
-            if(!edge&&!sp&&bayer(x+3,Y+1)<hole)continue;put(buf,x,Y,R[Math.max(0,Math.min(4,i))],a);}
-          else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[5],a);
-          else if(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[6],a*.6);}
-        put(buf,tx,ty,lvl<2?R[0]:R[1],a);
-        /* light: a warm pool on the ground and a soft warm halo on every chevron (squashed like the ground), bigger on the wave */
-        eglow(light,CX+.5,cy+1,12,4,POOL,(.12+.22*h)*a);eglow(light,CX+.5,cy+.5,8,5,HALO,(.14+.45*h)*a);
-        if(h>.2&&!PERF.lite)eglow(light,CX+.5,cy,12,8,R[1],.45*h*h*a);
-        /* the wave leader: a 4-spike cross glint on its tip (2 px arms with pale cyan ends while fresh, then 1 px) */
-        if(hot){const L=dd<.1?2:1;put(buf,tx,ty,R[0],a);for(let s2=1;s2<=L;s2++){const col=s2===2?CYAN:R[1];
-            put(buf,tx+s2,ty,col,a);put(buf,tx-s2,ty,col,a);put(buf,tx,ty-s2,col,a);put(buf,tx,ty+s2,col,a);}light.glow(tx+.5,ty+.5,5,R[0],.45*a);}
-        /* 1-3 tiny cross motes drifting up after the wave (a plus while young, then 1 px), now and then a cyan-white one */
-        if(dd>=0&&dd<1&&!PERF.lite){const nm=1+Math.floor(hash(k,21)*3),cyc=Math.floor(st.t/LOOP);for(let j=0;j<nm;j++){const ag=dd-j*.12;if(ag<0)continue;const q=ag/.85;if(q>=1)continue;
-          const mx=Math.round(CX-.5+(hash(k*5+j,11)-.5)*10+Math.sin(ag*7+j*2)*.8),my=Math.round(cy-2-q*14-j),cyn=hash(k*13+j+cyc*7,23)<.12;
-          const col=cyn?CYAN:q<.3?R[0]:q<.6?R[1]:R[2],ma=(1-q*q)*a;put(buf,mx,my,col,ma);
-          if(q<.35){const c2=cyn?R[0]:R[2];put(buf,mx+1,my,c2,ma);put(buf,mx-1,my,c2,ma);put(buf,mx,my-1,c2,ma);put(buf,mx,my+1,c2,ma);}}}},
+        /* every chevron has the same material; only the last two thin their body (outline kept). oc: a nearer sprite covers it, so it
+           drops to a faint dithered ghost (45 %, rim and body) that still flashes with the pulse, and the route reads through the prop */
+        const n=st.pts.length,h=Math.min(1,st.h[k]+base),dd=st.dd[k],oc=st.oc[k],a=fade*(1-oc),gh=fade*oc*.45;if(a+gh<=.02)return;
+        const hole=k>=n-2?(k-(n-3))*.22:0,hot=dd>=-.02&&dd<.2,big=dd>=-.02&&dd<.15,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
+        let ux=Math.cos(c.a),uy=Math.sin(c.a)*SQ;const ul=Math.hypot(ux,uy)||1;ux/=ul;uy/=ul;
+        if(a>.02){/* contact smudge (soft alpha shadow) and the stepped warm ground glow round its foot, drawn first */
+          for(let Y=CY+1;Y<=CY+6;Y++)for(let x=CX-9;x<=CX+9;x++){const ex=(x+.5-CX-.5)/8.5,ey=(Y+.5-CY-3.5)/2.6,e=ex*ex+ey*ey;if(e>=1)continue;
+            if(e<.5)buf.blend(x,Y,R[6],.3*(1-e)*a);if(e<.35)put(buf,x,Y,h>.5?R[1]:R[3],(.25+.35*h)*a);else if(e>.6)put(buf,x,Y,h>.5?R[2]:R[4],(.12+.25*h)*a);}}
+        /* the chevron mask on the art grid, the direction snapped to 8 ways so its arms are clean 1:1 stairs or straight runs:
+           E is a ">" 9 px tall, 7 px long, arms 3 px thick, 4 px next to the tip, V-notched tail (rows ELO..EHI); SE is its 45-degree
+           turn, a 7 x 7 corner, arms 2 px thick, the inside of the corner filled to a V notch; the other six are quarter turns of these.
+           As the wave passes it grows 1 px (|j| <= 5, corner arms from -4). 1 = body, 2 = spine */
+        const d=((Math.round(Math.atan2(uy,ux)/(Math.PI/4))%8)+8)%8,rq=d>>1,dg=d&1,lim=dg?(big?-4:-3):(big?5:4);
+        M.fill(0);for(let Y=cy-7;Y<=cy+7;Y++)for(let x=CX-7;x<=CX+7;x++){let i=x-CX,j=Y-cy;for(let r=0;r<rq;r++){const t=i;i=j;j=-t;}
+          let on=0;if(!dg){const aj=Math.abs(j);if(aj<=lim&&i>=ELO[aj]&&i<=EHI[aj])on=j===0&&i>=0?2:1;}else if(i<=3&&j<=3&&i>=lim&&j>=lim&&(i>=2||j>=2||(i>=0&&j>=0&&i+j>=1)))on=i===j&&i>=1?2:1;
+          M[Y*CW+x]=on;}
+        let tx=3,ty=dg?3:0;for(let r=0;r<rq;r++){const t=tx;tx=-ty;ty=t;}
+        /* ramp: rest body 3.0 (muted gold / old gold), the wave lifts it to 0 (warm white / cream); the fall back is Bayer-dithered
+           between steps, the afterglow behind the wave */
+        const m=(x,Y)=>x>=0&&Y>=0&&x<CW&&Y<LH&&M[Y*CW+x]>0,lv=3-3*h;
+        for(let Y=cy-8;Y<=cy+9;Y++)for(let x=CX-8;x<=CX+8;x++){
+          if(m(x,Y)){const edge=!m(x,Y-1),sp=M[Y*CW+x]===2;let i=Math.floor(lv+bayer(x,Y));if(edge||sp)i--;else if(!m(x,Y+1))i++;
+            const col=R[Math.max(0,Math.min(4,i))];if(a>.02){if(!edge&&!sp&&bayer(x+3,Y+1)<hole)continue;put(buf,x,Y,col,a);}else put(buf,x,Y,col,gh+.4*h*oc);}
+          else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[5],a>.02?a:gh);
+          else if(a>.02&&(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1)))put(buf,x,Y,R[6],a*.6);}
+        /* the cream highlight pixel on the tip */
+        if(a>.02)put(buf,CX+tx-Math.sign(tx),cy+ty-Math.sign(ty),R[0],a);
+        const A2=Math.max(a,gh);
+        /* light: a warm pool on the ground (12 x 4.5 px), a soft warm-white bloom core on every chevron, a bigger halo on the wave */
+        eglow(light,CX+.5,CY+2.5,12,4.5,POOL,(.14+.24*h)*A2);eglow(light,CX+.5,cy+.5,7,6,HALO,(.16+.5*h)*A2);
+        if(h>.12&&!PERF.lite)eglow(light,CX+.5,cy+.5,11,10,R[1],.5*Math.pow(h,1.5)*A2);
+        /* two four-point plus sparkles per chevron, each on its own period (1.3-2.1 s) and phase, lit for 0.25 s at a new spot each
+           cycle: white core, cream arms, pale cyan tips while large; on the wave both fire at once round the tip */
+        for(let q=0;q<2;q++){const per=1.3+hash(k*2+q,13)*.8,u=st.t/per+hash(k*2+q,17),cyc=Math.floor(u),f=u-cyc,on=hot&&q===0?1:f<.25/per?1:0;if(!on)continue;
+          const ph=hot&&q===0?dd/.2:f*per/.25,L=ph<.5?2:1;let sx,sy;
+          if(hot&&q===0){sx=CX+tx;sy=cy+ty;}else{sx=CX+Math.round((hash(cyc*7+k,5+q)-.5)*14);sy=cy-3-Math.round(hash(cyc*3+k,9+q)*4);}
+          put(buf,sx,sy,R[0],A2);for(let s2=1;s2<=L;s2++){const col=s2===2?CYAN:R[1];put(buf,sx+s2,sy,col,A2);put(buf,sx-s2,sy,col,A2);put(buf,sx,sy-s2,col,A2);put(buf,sx,sy+s2,col,A2);}
+          light.glow(sx+.5,sy+.5,4,R[1],.35*A2);}
+        if(hot&&a>.02)put(buf,CX-tx+(dg?0:-1),cy-5+(Math.floor(dd/.1)&1),CYAN,a);
+        /* motes lifting off as the pulse passes */
+        if(dd>=0&&dd<.9&&!PERF.lite&&a>.02)for(let j=0;j<3;j++){const ag=dd-j*.1;if(ag<0)continue;const q=ag/.8;if(q>=1)continue;
+          const mx=Math.round(CX-.5+(hash(k*5+j,11)-.5)*8+Math.sin(ag*9+j*2)*.8),my=Math.round(cy-2-q*15-j);
+          put(buf,mx,my,q<.3?R[0]:q<.6?R[1]:R[2],(1-q*q)*a);}},
       done:()=>stop&&fade<=0,stop(){stop=true;}};}
   /* ---------- the trail ---------- */
   const H=[];
@@ -132,8 +140,9 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   onEv('update',dt=>{heat(dt);const g=want();if(!g){show(false);return;}
     st.re-=dt;const key=Math.floor(g.x/T)+','+Math.floor(g.y/T)+','+Math.floor(P.x/T)+','+Math.floor(P.y/T);
     if(st.re<=0||key!==st.last&&st.re<.35){st.re=.5;st.last=key;st.rt=route(Math.floor(P.x/T),Math.floor(P.y/T),Math.floor(g.x/T),Math.floor(g.y/T));}
-    st.pts=sample(st.rt?st.rt.slice():null,P.x,P.y,nMax());for(let k=1,P2=st.pts;k<P2.length;k++)if(Math.abs(hdEH(P2[k].x,P2[k].y)-hdEH(P2[k-1].x,P2[k-1].y))>10){P2.length=k;break;}occlude(dt);show(st.pts.length>0);
-    for(let k=0;k<NMAX;k++){const h=H[k],c=st.pts[k];if(!h||h.dead)continue;if(c){h.x=c.x;h.y=c.y;}}});
+    st.pts=sample(st.rt?st.rt.slice():null,P.x,P.y,nMax());occlude(dt);show(st.pts.length>0);
+    for(let k=0;k<NMAX;k++){const h=H[k],c=st.pts[k];if(!h||h.dead)continue;if(c){/* a covered chevron's ghost stands just in front of the prop, raised by 0.35 of the shift so it stays on the same screen spot */
+      const lift=st.oc[k]>0?Math.max(0,st.oy[k]-c.y+8):0;h.x=c.x;h.y=c.y+lift;h.h=lift?lift*.35+hdEH(c.x,c.y)-hdEH(c.x,c.y+lift):0;}}});
   onEv('pxClear',()=>{H.length=0;st.on=false;st.re=0;});
   pxlab('wayfinder-trail','Wayfinder: trail to the next checkpoint','World','orig',()=>{settings.trk=true;P.combatT=0;st.re=0;st.t=0;});
   return{pxWayfinder:st};})();
