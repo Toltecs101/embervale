@@ -28,7 +28,7 @@
    - Feel: calm, a heartbeat running out along the path; fades in over 0.4 s and out over 0.3 s. */
 const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
   const R=['#fffbea','#fff0c2','#f5dc90','#d9b05c','#a97c34','#64401a','#2e1c0c'].map(hex),CYAN=hex('#c8f0ff'),POOL=hex('#c08840'),HALO=hex('#f0c060');
-  const ELO=[0,-1,-2,-3,-3,-4],EHI=[3,2,0,-1,-2,-3],NMAX=12,STEP=1.15,FIRST=2.1,MY=.5,LOOP=2,STAG=.15,SQ=.36,CW=24,LH=32,CX=12,CY=21;
+  const ELO=[0,-1,-2,-3,-3,-4],EHI=[3,2,0,-1,-2,-3],NMAX=13,STEP=1,FIRST=2.1,MY=.5,LOOP=2,STAG=.15,SQ=.36,CW=24,LH=32,CX=12,CY=21;
   /* ---------- A* on the tile grid (8 neighbours, no corner cutting); props cost extra so the route keeps to open ground ---------- */
   const NN=MW*MH,GC=new Float32Array(NN),FR=new Int32Array(NN),ST=new Uint32Array(NN),CL=new Uint32Array(NN),HP=new Int32Array(NN),HF=new Float32Array(NN);
   let stamp=0,hn=0;
@@ -57,7 +57,7 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
     for(let s=FIRST*T;s<=tot-.4*T&&out.length<N;s+=STEP*T){const c=at(p,A,s),f=at(p,A,s+.7*T),b=at(p,A,s-.7*T);out.push({x:c[0],y:c[1],a:Math.atan2(f[1]-b[1],f[0]-b[0])});}
     return out;}
   /* ---------- the shared trail state: heat per chevron, computed once per update ---------- */
-  const st={pts:[],t:0,on:false,goal:null,rt:null,re:0,last:'',h:new Float32Array(NMAX),dd:new Float32Array(NMAX),oc:new Float32Array(NMAX),occ:new Uint8Array(NMAX),m:new Uint8Array(CW*LH)};
+  const st={pts:[],t:0,on:false,goal:null,rt:null,re:0,last:'',h:new Float32Array(NMAX),dd:new Float32Array(NMAX),oc:new Float32Array(NMAX),occ:new Uint8Array(NMAX),oy:new Float32Array(NMAX),m:new Uint8Array(CW*LH)};
   function heat(dt){st.t+=dt;const tp=st.t%LOOP;
     for(let k=0;k<NMAX;k++){let d=tp-k*STAG-(hash(k,3)-.5)*.06;d=((d+.3)%LOOP+LOOP)%LOOP-.3;st.dd[k]=d;
       st.h[k]=d<-.05?0:d<0?1+d/.05:d<.15?1:Math.max(0,1-(d-.15)/.25);}}
@@ -70,10 +70,10 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
       for(let k=0;k<n;k++){if(O[k])continue;const c=st.pts[k];if(s.y<=c.y+4||s.y>c.y+8*T||c.x<l-14||c.x>r+14)continue;
         if(!top){top=toScreen(s.x,s.h+A*CAM.cp,s.y-A*CAM.sp,VW,VH);bot=toScreen(s.x,s.h,s.y,VW,VH);}const fy=(S[k].y-top.y)/((bot.y-top.y)||1);if(fy<-.05||fy>1)continue;
         /* the sprite's own pixels round the chevron (about its size, 6 x 4 art px each way): any opaque one hides it */
-        if(!AD||f.t){if(c.x>l+(r-l)*.18&&c.x<r-(r-l)*.18)O[k]=1;continue;}const col=(c.x-l)/kx,row=fy*f.ay,cw=Math.ceil(14/kx),rh=Math.ceil(10/ky);let hit=0;
+        if(!AD||f.t){if(c.x>l+(r-l)*.18&&c.x<r-(r-l)*.18){O[k]=1;st.oy[k]=s.y;}continue;}const col=(c.x-l)/kx,row=fy*f.ay,cw=Math.ceil(14/kx),rh=Math.ceil(10/ky);let hit=0;
         for(let y=Math.max(0,Math.floor(row-rh));y<=Math.min(f.h-1,row+rh)&&!hit;y++)for(let x=Math.max(0,Math.floor(col-cw));x<=Math.min(f.w-1,col+cw);x++){
           const sx=s.flip?f.w-1-x:x;if(AD[(f.y+y)*AW+f.x+sx]){hit=1;break;}}
-        if(hit)O[k]=1;}}
+        if(hit){O[k]=1;st.oy[k]=s.y;}}}
     for(let k=0;k<NMAX;k++)st.oc[k]=O[k]?Math.min(1,st.oc[k]+dt/.15):Math.max(0,st.oc[k]-dt/.15);}
   /* ---------- one chevron (Sprite Fusion shape: update / draw / done / stop), a flat decal on the route ---------- */
   function chevron(k){let stop=false,fade=0;const base=.05+(hash(k,7)-.5)*.1;
@@ -84,8 +84,8 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
     return{update(dt){fade=stop?Math.max(0,fade-dt/.3):Math.min(1,fade+dt/.4);},
       draw(fr){const c=st.pts[k];if(!c||fade<=0)return;const buf=new Px(fr,fr.color),light=new Px(fr,fr.light),M=st.m;
         /* every chevron has the same material; only the last two thin their body (outline kept). oc: a nearer sprite covers it, so it
-           drops to a faint dithered ghost (30 %, body only) that still flashes with the pulse, and the route reads through the prop */
-        const n=st.pts.length,h=Math.min(1,st.h[k]+base),dd=st.dd[k],oc=st.oc[k],a=fade*(1-oc),gh=fade*oc*.3;if(a+gh<=.02)return;
+           drops to a faint dithered ghost (45 %, rim and body) that still flashes with the pulse, and the route reads through the prop */
+        const n=st.pts.length,h=Math.min(1,st.h[k]+base),dd=st.dd[k],oc=st.oc[k],a=fade*(1-oc),gh=fade*oc*.45;if(a+gh<=.02)return;
         const hole=k>=n-2?(k-(n-3))*.22:0,hot=dd>=-.02&&dd<.2,big=dd>=-.02&&dd<.15,cy=CY-(hot||Math.sin(st.t*3.1+k*1.9)>.55?1:0);
         let ux=Math.cos(c.a),uy=Math.sin(c.a)*SQ;const ul=Math.hypot(ux,uy)||1;ux/=ul;uy/=ul;
         if(a>.02){/* contact smudge (soft alpha shadow) and the stepped warm ground glow round its foot, drawn first */
@@ -106,11 +106,11 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
         for(let Y=cy-8;Y<=cy+9;Y++)for(let x=CX-8;x<=CX+8;x++){
           if(m(x,Y)){const edge=!m(x,Y-1),sp=M[Y*CW+x]===2;let i=Math.floor(lv+bayer(x,Y));if(edge||sp)i--;else if(!m(x,Y+1))i++;
             const col=R[Math.max(0,Math.min(4,i))];if(a>.02){if(!edge&&!sp&&bayer(x+3,Y+1)<hole)continue;put(buf,x,Y,col,a);}else put(buf,x,Y,col,gh+.4*h*oc);}
-          else if(a>.02&&(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1)))put(buf,x,Y,R[5],a);
+          else if(m(x-1,Y)||m(x+1,Y)||m(x,Y-1)||m(x,Y+1)||m(x-1,Y-1)||m(x+1,Y-1))put(buf,x,Y,R[5],a>.02?a:gh);
           else if(a>.02&&(m(x,Y-2)||m(x-1,Y-1)||m(x+1,Y-1)))put(buf,x,Y,R[6],a*.6);}
         /* the cream highlight pixel on the tip */
         if(a>.02)put(buf,CX+tx-Math.sign(tx),cy+ty-Math.sign(ty),R[0],a);
-        const A2=Math.max(a,gh*2);
+        const A2=Math.max(a,gh);
         /* light: a warm pool on the ground (12 x 4.5 px), a soft warm-white bloom core on every chevron, a bigger halo on the wave */
         eglow(light,CX+.5,CY+2.5,12,4.5,POOL,(.14+.24*h)*A2);eglow(light,CX+.5,cy+.5,7,6,HALO,(.16+.5*h)*A2);
         if(h>.12&&!PERF.lite)eglow(light,CX+.5,cy+.5,11,10,R[1],.5*Math.pow(h,1.5)*A2);
@@ -139,7 +139,8 @@ const {pxWayfinder}=(function(){'use strict';const {Px,bayer,hex,hash}=PXK;
     st.re-=dt;const key=Math.floor(g.x/T)+','+Math.floor(g.y/T)+','+Math.floor(P.x/T)+','+Math.floor(P.y/T);
     if(st.re<=0||key!==st.last&&st.re<.35){st.re=.5;st.last=key;st.rt=route(Math.floor(P.x/T),Math.floor(P.y/T),Math.floor(g.x/T),Math.floor(g.y/T));}
     st.pts=sample(st.rt?st.rt.slice():null,P.x,P.y,nMax());occlude(dt);show(st.pts.length>0);
-    for(let k=0;k<NMAX;k++){const h=H[k],c=st.pts[k];if(!h||h.dead)continue;if(c){h.x=c.x;h.y=c.y;}}});
+    for(let k=0;k<NMAX;k++){const h=H[k],c=st.pts[k];if(!h||h.dead)continue;if(c){/* a covered chevron's ghost stands just in front of the prop, raised by 0.35 of the shift so it stays on the same screen spot */
+      const lift=st.oc[k]>0?Math.max(0,st.oy[k]-c.y+8):0;h.x=c.x;h.y=c.y+lift;h.h=lift?lift*.35+hdEH(c.x,c.y)-hdEH(c.x,c.y+lift):0;}}});
   onEv('pxClear',()=>{H.length=0;st.on=false;st.re=0;});
   pxlab('wayfinder-trail','Wayfinder: trail to the next checkpoint','World','orig',()=>{settings.trk=true;P.combatT=0;st.re=0;st.t=0;});
   return{pxWayfinder:st};})();
