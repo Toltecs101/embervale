@@ -9,7 +9,7 @@
    3 + 4S dust discs, one smoke wisp at 0.05 s; ricochet adds a white-hot streak along the bounce (1500 u/s for 0.16 s) and a hot
    scrape cooling to soot over 0.9 s; light pop e^(-t/0.05).
    Embervale parameters: a surface hit with normal up and the ground row at the target's feet; blow at SF's 0.19 rad (ricochet 0.3)
-   toward the side it travels; surface #4a3f69; size 0.75 (crits / big hits 0.95, bosses x1.1); damage colours as SF-style ramps,
+   toward the side it travels; surface #4a3f69; a 1 px C5 outline round the star on frames 1-2 only (reads on white hit flashes); size 0.75 (crits / big hits 0.95, bosses x1.1); damage colours as SF-style ramps,
    icy blues as SF's cyan ramp #ffffff #dffcff #7ff3ff #1ab8e6 #1a6fb8 #183a7a. */
 const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp,hex,rgb,cl:clamp,TAU,PXW:PX}=PXK;
   const SOOT=hex('#0d0a12'),SMOKE_RAMP=['#7b6f72','#5d5660','#433d48','#2b2630','#1a171e'].map(hex),WARM_RAMP=['#ffffff','#fff3a6','#ffe26b','#ff8a2a','#f2561d','#c9281f'].map(hex),SMOKE=hex('#6a6278');
@@ -50,8 +50,8 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
           ps.draw(buf,light,'back');}
         if(layer==='back')return;
         const f=Math.max(1,Math.ceil(t*60-1e-6));
-        if(f===1)star(buf,ax,ay,spikes,S,1,1,C[0],C[1],C[2],C[4]);
-        else if(f===2)star(buf,ax,ay,spikes,S,1.25,.55,C[1],C[2],C[3],C[4]);
+        if(f===1)star(buf,ax,ay,spikes,S,1,1,C[0],C[1],C[2],C[4],o.rim?C[5]:0);
+        else if(f===2)star(buf,ax,ay,spikes,S,1.25,.55,C[1],C[2],C[3],C[4],o.rim?C[5]:0);
         if(f>=3&&t<.13){const k=(t-2/60)/(.13-2/60);for(const s of shards)crescent(buf,ax,ay,s.a,s.r+s.v*(t-2/60),s.arc*(1-.4*k),k<.4?C[2]:k<.7?C[3]:C[4],1-k);}
         if(f>=3&&t<.2){const k=(t-2/60)/(.2-2/60),r=(8+12*(1-Math.pow(1-k,3)))*S,th=Math.max(1,2*(1-k)*S),col=k<.3?C[1]:k<.6?C[2]:C[3];
           for(let j=0,n=Math.ceil(r*TAU*1.3);j<n;j++){const a=(j/n)*TAU;if(!open(a))continue;for(let q=-th/2;q<=th/2;q+=.5)dot(buf,ax+Math.cos(a)*(r+q),ay+Math.sin(a)*(r+q),col,1.15-k);}}
@@ -62,11 +62,13 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
         const pop=Math.exp(-t/.05);if(pop>.02){light.glow(ax,ay,22*S+6,C[3],.9*pop);light.glow(ax,ay,8*S+2,C[0],.7*pop);}},
       done:()=>t>(glance?1.1:.2)&&ps.list.length===0,
       lamp:()=>{const pop=Math.exp(-t/.05);return pop>.05?{i:1.1*pop*S,c:[(C[3]&255)/255,((C[3]>>>8)&255)/255,((C[3]>>>16)&255)/255],r:120*S,h:0}:null;}};}
-  function star(buf,ax,ay,spikes,S,sc,th,core,body,inner,rim){
+  /* Embervale: an optional 1 px dark outline (out) on frames 1-2 keeps the star readable on white hit-flashed bodies */
+  function star(buf,ax,ay,spikes,S,sc,th,core,body,inner,rim,out){if(out)for(const s of spikes){const c=Math.cos(s.a),sn=Math.sin(s.a),L=s.len*sc;
+      for(let d=0;d<=L+1;d+=.5){const hw=s.w*th*Math.max(0,1-d/L)*Math.min(1,.5+d/3)+1.3;for(let q=-hw;q<=hw;q+=.5)buf.set(Math.floor(ax+c*d-sn*q),Math.floor(ay+sn*d+c*q),out);}}
     for(const pass of [0,1,2])for(const s of spikes){const c=Math.cos(s.a),sn=Math.sin(s.a),L=s.len*sc;
       for(let d=0;d<=L;d+=.5){const hw0=s.w*th*(1-d/L)*Math.min(1,.5+d/3),hw=pass===0?hw0+.8:pass===1?hw0:hw0*.45;if(pass===2&&d>L*.55)break;
         for(let q=-hw;q<=hw;q+=.5)buf.set(Math.floor(ax+c*d-sn*q),Math.floor(ay+sn*d+c*q),pass===0?rim:pass===1?(d<L*.35?inner:body):core);}}
-    const r=2.4*S*sc*Math.sqrt(th);buf.disc(ax,ay,r+.8,inner);buf.disc(ax,ay,r,core);}
+    const r=2.4*S*sc*Math.sqrt(th);if(out)buf.disc(ax,ay,r+1.6,out);buf.disc(ax,ay,r+.8,inner);buf.disc(ax,ay,r,core);}
   function crescent(buf,ax,ay,a,r,arc,c,k){const n=Math.ceil(r*arc*2.2);
     for(let j=0;j<=n;j++){const u=j/n-.5,th=a+u*arc,w=1.4*(1-Math.abs(u)*2);for(let q=-w*.5;q<=w*.5+.01;q+=.5)dot(buf,ax+Math.cos(th)*(r+q),ay+Math.sin(th)*(r+q),c,k);}}
   class Particles{
@@ -95,7 +97,7 @@ const {pxImpact}=(function(){'use strict';const {Px,dot,bayer,Rng,mix,scale,ramp
   function pxImpact(x,y,h,o={}){const a=o.a??0,c0=Math.cos(a),side=Math.abs(c0)>.15?Math.sign(c0):(P&&P.face<0?-1:1),glance=o.kind==='ricochet',
       tilt=glance?.3:.19,ang=side>0?tilt:Math.PI-tilt,hp=Math.max(0,Math.round(h/PIX)),S=o.size??.75,
       W=144,HH=Math.max(64,hp+48),AX=side>0?44:W-44;
-    return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:S,ramp:o.ramp,ground:c.y,surface:o.surface??SURF,seed:seed++,shake:PXK.shake}),
+    return pxfx(c=>impact({kind:o.kind,x:c.x,y:c.y-hp*PX,angle:ang,size:S,ramp:o.ramp,ground:c.y,surface:o.surface??SURF,rim:true,seed:seed++,shake:PXK.shake}),
       {x,y,w:W,hh:HH,ax:AX,ay:HH-12,pri:o.pri??1,lamp:o.lamp});}
   /* damage colours: SF-style rampOf (the game's tints are pastel, so they are pulled to 2.2x saturation first, and the last step
      deepened); icy blues use SF's cyan ramp, warm tints SF's WARM ramp */
