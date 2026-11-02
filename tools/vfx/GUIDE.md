@@ -183,3 +183,10 @@ every Nth frame from a fixed texture slot; `nolight`; the texture is 2048x1024 (
 **Already in index.html (G9 block, not yours to change):** pet shields share a 20 s cooldown, pet/summon hits charge the Ultimate at a
 quarter rate, at most 4 spirit wolves, growth cleared round boss Wardens, greener start foliage, MENU moved beside the minimap.
 `fx/wayfinder.js` draws the gold route chevrons to the next checkpoint.
+
+## Fixing after a rating: faithfulness first
+For a Sprite Fusion port, the reference IS the original code: keep SF's exact drawing and particle code (shapes, passes, counts, radii,
+lifetimes, light pops) and change only parameters (size, colours/ramp, surface/ground, timing scale) to fit the game. Raters vary by
+about +/-0.3 between runs and some of their requests contradict each other; before changing geometry, put your close-up next to the
+reference sheet at the same pixel scale and check that size and shape match. Never grow an effect past its reference's proportions to
+chase "visibility": tune contrast or the ramp instead.
